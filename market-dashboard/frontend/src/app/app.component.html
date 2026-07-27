@@ -1,7 +1,14 @@
 <main class="painel">
   <header class="painel__header">
     <h1>Dashboard de Mercado</h1>
-    <p class="painel__hint">Estrutura inicial (H01) — sem dados reais ainda</p>
+    <p class="painel__hint">Dados via GET /api/dashboard (H02 — mock)</p>
   </header>
-  <app-card-moeda [dados]="exemploBitcoin" />
+
+  @if (carregando) {
+    <p>Carregando…</p>
+  } @else if (erro) {
+    <p class="painel__erro" role="alert">{{ erro }}</p>
+  } @else if (dados) {
+    <app-card-moeda [dados]="dados" />
+  }
 </main>

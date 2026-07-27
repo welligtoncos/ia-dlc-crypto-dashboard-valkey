@@ -279,3 +279,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U1 H01 done
 
 ---
+
+## Construction H02 — Concluída
+**Timestamp**: 2026-07-27T01:58:00Z
+**User Input**: "prossiga com H02"
+**AI Response**: H02 implementada: backend FastAPI GET /api/dashboard mock + CORS; DashboardService HttpClient; AppComponent consome API; contrato documentado. Aguardando validação manual.
+**Context**: Construction U1 H02 done
+
+---

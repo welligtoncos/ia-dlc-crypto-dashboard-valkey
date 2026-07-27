@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CardMoedaComponent } from './card-moeda/card-moeda.component';
 import { MoedaCard } from './models/moeda-card.model';
-import { environment } from '../environments/environment';
+import { DashboardService } from './services/dashboard.service';
 
 @Component({
   selector: 'app-root',
@@ -10,16 +10,29 @@ import { environment } from '../environments/environment';
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
-export class AppComponent {
-  /** Objeto de exemplo — H01 sem HTTP; API base só em environment. */
-  readonly exemploBitcoin: MoedaCard = {
-    moeda: 'bitcoin',
-    preco: null,
-    variacao_24h: null,
-    media_movel: null,
-    volatilidade: null,
-  };
+export class AppComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
 
-  /** Referência à config (garante uso do environment; sem hardcode de URL no template). */
-  readonly apiBaseUrl = environment.apiBaseUrl;
+  dados: MoedaCard | null = null;
+  erro: string | null = null;
+  carregando = true;
+
+  ngOnInit(): void {
+    this.dashboardService.getDashboard().subscribe({
+      next: (item) => {
+        this.dados = {
+          moeda: item.moeda,
+          preco: item.preco,
+          variacao_24h: item.variacao_24h,
+          media_movel: item.media_movel,
+          volatilidade: item.volatilidade,
+        };
+        this.carregando = false;
+      },
+      error: () => {
+        this.erro = 'Não foi possível carregar o dashboard. Verifique se o BFF está em http://localhost:8000.';
+        this.carregando = false;
+      },
+    });
+  }
 }

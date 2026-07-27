@@ -20,3 +20,11 @@
   color: #57606a;
   font-size: 0.95rem;
 }
+
+.painel__erro {
+  color: #a40e26;
+  background: #ffebe9;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  max-width: 28rem;
+}
