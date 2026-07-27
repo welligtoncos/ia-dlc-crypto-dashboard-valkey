@@ -67,3 +67,64 @@ aws ecr list-images --repository-name market-dashboard-backend --region us-east-
 ```
 
 Push é **manual** nesta história (CI/CD = H20).
+
+## H16 — ElastiCache for Valkey
+
+Nó único `cache.t4g.micro` em subnets **privadas**. Security group **sem ingress** (aberto pelas tasks na H19).
+
+```powershell
+cd market-dashboard\infra
+terraform plan
+terraform apply
+terraform output valkey_primary_endpoint
+terraform output valkey_port
+```
+
+Gera **custo contínuo**. Ao fim da sessão: `terraform destroy`.
+
+### IAM (lab / usuario-dados) — bloqueio atual
+
+O Terraform **não consegue** criar ElastiCache sem a action
+`elasticache:CreateCacheSubnetGroup`. Isso é permissão IAM, não bug do `.tf`.
+
+Arquivo pronto: `iam-policies/elasticache-study.json`
+
+**Admin** (conta com permissão IAM) anexa ao usuário `usuario-dados`:
+
+```powershell
+cd market-dashboard\infra
+
+aws iam put-user-policy `
+  --user-name usuario-dados `
+  --policy-name MarketDashboardElastiCacheStudy `
+  --policy-document file://iam-policies/elasticache-study.json
+```
+
+Depois, no usuário do lab:
+
+```powershell
+aws sts get-caller-identity
+terraform apply
+terraform output valkey_primary_endpoint
+```
+
+Sem essa policy, `valkey_primary_endpoint` **não existe no state** (apply não concluiu).
+
+## H17 — ECS Fargate (BFF + worker + beat)
+
+**Pré-requisito:** imagem `latest` no ECR (H15).
+
+```powershell
+cd market-dashboard\infra
+terraform plan
+terraform apply
+terraform output alb_dns_name
+curl.exe -i "http://$(terraform output -raw alb_dns_name)/api/dashboard"
+curl.exe -i "http://$(terraform output -raw alb_dns_name)/health"
+```
+
+- Beat: `desired_count = 1` (não aumentar).
+- Tasks em subnet pública com IP público (sem NAT).
+- Logs: `/ecs/market-dashboard/{bff,worker,beat}` no CloudWatch.
+
+Custo: ALB + Fargate + Valkey. Ao fim: `terraform destroy`.

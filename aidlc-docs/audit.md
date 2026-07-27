@@ -431,3 +431,51 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: H15 apply recovery
 
 ---
+
+## Construction H16 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:38:45Z
+**User Input**: "ok"
+**AI Response**: Plano H16 aprovado; criando elasticache.tf (Valkey t4g.micro, SG fechado, subnets privadas).
+**Context**: Construction U5 H16
+
+---
+
+## Construction H16 — Concluída
+**Timestamp**: 2026-07-27T02:40:00Z
+**User Input**: "ok"
+**AI Response**: H16: elasticache.tf (Valkey 8.0 t4g.micro, subnet privada, SG sem ingress); outputs endpoint/porta/sg. Plan: 3 to add. Apply não executado (custo).
+**Context**: Construction U5 H16 done
+
+---
+
+## Construction H16 — Fix apply errors
+**Timestamp**: 2026-07-27T02:41:30Z
+**User Input**: "corrija [AccessDenied CreateCacheSubnetGroup + SG description non-ASCII]"
+**AI Response**: SG description ASCII-only; README com policy IAM ElastiCache para usuario-dados. AccessDenied exige admin IAM (fora do Terraform).
+**Context**: H16 apply recovery
+
+---
+
+## Construction H16 — Validada (apply)
+**Timestamp**: 2026-07-27T02:48:00Z
+**User Input**: "foi validado? [terraform apply Valkey Creation complete + output endpoint]"
+**AI Response**: Sim. Aceite H16 ok: replication group criado; valkey_primary_endpoint e porta em outputs; SG sem ingress publico.
+**Context**: H16 ready
+
+---
+
+## Construction H17 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:49:45Z
+**User Input**: "OK"
+**AI Response**: Plano H17 aprovado; implementando ecs.tf (cluster, ALB, BFF/worker/beat, logs, env Valkey).
+**Context**: Construction U5 H17
+
+---
+
+## Construction H17 — Código + plan
+**Timestamp**: 2026-07-27T02:52:00Z
+**User Input**: "OK"
+**AI Response**: H17: ecs.tf ALB+3 services+CW+IAM+SG Valkey<-tasks; outputs alb_dns_name. Plan: 19 to add. Apply nao executado.
+**Context**: Construction U5 H17 awaiting apply
+
+---

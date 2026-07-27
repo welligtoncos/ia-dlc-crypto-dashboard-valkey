@@ -52,3 +52,38 @@ output "ecr_repository_name" {
   description = "Nome do repositório ECR."
   value       = aws_ecr_repository.backend.name
 }
+
+output "valkey_primary_endpoint" {
+  description = "Endpoint primario do ElastiCache Valkey (host)."
+  value       = aws_elasticache_replication_group.valkey.primary_endpoint_address
+}
+
+output "valkey_port" {
+  description = "Porta do ElastiCache Valkey."
+  value       = aws_elasticache_replication_group.valkey.port
+}
+
+output "valkey_security_group_id" {
+  description = "SG do Valkey (ingress das tasks Fargate na H17/H19)."
+  value       = aws_security_group.valkey.id
+}
+
+output "alb_dns_name" {
+  description = "DNS publico do ALB (http://<dns>/api/dashboard)."
+  value       = aws_lb.bff.dns_name
+}
+
+output "alb_url" {
+  description = "URL base HTTP do BFF via ALB."
+  value       = "http://${aws_lb.bff.dns_name}"
+}
+
+output "ecs_cluster_name" {
+  description = "Nome do cluster ECS."
+  value       = aws_ecs_cluster.main.name
+}
+
+output "ecs_tasks_security_group_id" {
+  description = "SG das tasks Fargate."
+  value       = aws_security_group.ecs_tasks.id
+}
