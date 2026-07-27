@@ -12,14 +12,18 @@ Contrato GET /api/dashboard (JSON):
 Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
 
 H05: GET /health (PING Valkey).
-H06: cache-aside na rota com TTL configurável.
+H06: cache-aside com TTL configurável.
+H07: header X-Cache, log de latência, ?refresh=true.
 """
 
-from datetime import datetime, timezone
+from __future__ import annotations
+
 import logging
+import time
+from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import CACHE_TTL_SECONDS, DASHBOARD_COIN_ID
@@ -28,6 +32,7 @@ from services.cache import ping as valkey_ping
 from services.cache import set as cache_set
 from services.coingecko import CoinGeckoError, get_market_data
 
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="market-dashboard-bff", version="0.1.0")
@@ -41,6 +46,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Cache"],
 )
 
 
@@ -66,23 +72,44 @@ def _cache_key(coin_id: str) -> str:
 
 
 @app.get("/api/dashboard")
-def get_dashboard() -> dict[str, Any]:
+def get_dashboard(
+    response: Response,
+    refresh: bool = Query(False, description="Se true, ignora cache e força MISS"),
+) -> dict[str, Any]:
     """
-    Cache-aside (H06): HIT no Valkey; MISS busca CoinGecko, grava com CACHE_TTL_SECONDS.
-    media_movel e volatilidade ficam null até as histórias de indicadores.
+    Cache-aside + observabilidade (H07): X-Cache HIT|MISS e log com latência em ms.
     """
+    started = time.perf_counter()
     coin_id = DASHBOARD_COIN_ID
     key = _cache_key(coin_id)
+    origem = "MISS"
 
-    cached = cache_get(key)
-    if isinstance(cached, dict):
-        logger.info("cache HIT key=%s", key)
-        return cached
+    if not refresh:
+        cached = cache_get(key)
+        if isinstance(cached, dict):
+            origem = "HIT"
+            response.headers["X-Cache"] = origem
+            elapsed_ms = (time.perf_counter() - started) * 1000
+            logger.info(
+                "dashboard origem=%s key=%s latencia_ms=%.2f refresh=%s",
+                origem,
+                key,
+                elapsed_ms,
+                refresh,
+            )
+            return cached
 
-    logger.info("cache MISS key=%s — consultando CoinGecko", key)
+    logger.info("cache MISS key=%s refresh=%s — consultando CoinGecko", key, refresh)
     try:
         market = get_market_data(coin_id)
     except CoinGeckoError as exc:
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        logger.error(
+            "dashboard origem=ERROR key=%s latencia_ms=%.2f erro=%s",
+            key,
+            elapsed_ms,
+            exc,
+        )
         raise HTTPException(
             status_code=502,
             detail=(
@@ -100,4 +127,13 @@ def get_dashboard() -> dict[str, Any]:
         "atualizado_em": datetime.now(timezone.utc).isoformat(),
     }
     cache_set(key, payload, ttl=CACHE_TTL_SECONDS)
+    response.headers["X-Cache"] = origem
+    elapsed_ms = (time.perf_counter() - started) * 1000
+    logger.info(
+        "dashboard origem=%s key=%s latencia_ms=%.2f refresh=%s",
+        origem,
+        key,
+        elapsed_ms,
+        refresh,
+    )
     return payload
