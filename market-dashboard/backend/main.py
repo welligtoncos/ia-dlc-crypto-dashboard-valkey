@@ -14,6 +14,7 @@ Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
 H05: GET /health (PING Valkey).
 H06: cache-aside com TTL configurável.
 H07: header X-Cache, log de latência, ?refresh=true.
+H08: no MISS, acumula preço na série Valkey (sem calcular indicadores).
 """
 
 from __future__ import annotations
@@ -26,7 +27,8 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import CACHE_TTL_SECONDS, DASHBOARD_COIN_ID
+from config import CACHE_TTL_SECONDS, DASHBOARD_COIN_ID, SERIES_MAX_POINTS
+from services.cache import append_preco
 from services.cache import get as cache_get
 from services.cache import ping as valkey_ping
 from services.cache import set as cache_set
@@ -118,9 +120,18 @@ def get_dashboard(
             ),
         ) from exc
 
+    preco = float(market["preco"])
+    append_preco(coin_id, preco, max_n=SERIES_MAX_POINTS)
+    logger.info(
+        "serie atualizada coin=%s preco=%s max_n=%s",
+        coin_id,
+        preco,
+        SERIES_MAX_POINTS,
+    )
+
     payload: dict[str, Any] = {
         "moeda": coin_id,
-        "preco": market["preco"],
+        "preco": preco,
         "variacao_24h": market["variacao_24h"],
         "media_movel": None,
         "volatilidade": None,

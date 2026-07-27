@@ -327,3 +327,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U2 H07 done
 
 ---
+
+## Construction H08 — Concluída
+**Timestamp**: 2026-07-27T02:13:00Z
+**User Input**: "prossiga com h08"
+**AI Response**: H08: série ZSET serie:{coin}:precos; append_preco + get_ultimos_precos; SERIES_MAX_POINTS; grava no MISS. Validado 3 pontos após refresh x3. Sem cálculo de indicadores.
+**Context**: Construction U3 H08 done
+
+---

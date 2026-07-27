@@ -21,3 +21,6 @@ VALKEY_DB: int = int(os.getenv("VALKEY_DB", "0"))
 
 # Cache-aside (H06) — TTL do payload de indicadores em segundos.
 CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
+
+# Série temporal (H08) — máximo de pontos por moeda.
+SERIES_MAX_POINTS: int = int(os.getenv("SERIES_MAX_POINTS", "100"))

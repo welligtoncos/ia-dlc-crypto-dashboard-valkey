@@ -1,13 +1,13 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U2 — H07 concluída (Fase 2 cache completa)
+CONSTRUCTION — U3 — H08 concluída (série temporal)
 
 ## Progresso Construction
-- [x] H01–H04 — Fase 1
-- [x] H05–H07 — Fase 2 (Valkey + cache-aside + X-Cache)
-- [ ] H08 — Série temporal de preços
-- [ ] H09 … H20
+- [x] H01–H07 — Fases 1–2
+- [x] H08 — Série temporal de preços (ZSET)
+- [ ] H09 — Média móvel
+- [ ] H10 … H20
 
 ## Próximo
-Após validar H07, plano da **H08** (Fase 3).
+Após validar H08, plano da **H09**.
