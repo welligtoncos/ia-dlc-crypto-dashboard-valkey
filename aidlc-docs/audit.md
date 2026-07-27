@@ -263,3 +263,19 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Fim Inception → Construction H01 GATE plano
 
 ---
+
+## Construction H01 — Início
+**Timestamp**: 2026-07-27T01:52:00Z
+**User Input**: "prossiga com Construction"
+**AI Response**: Tratado como OK do plano H01. Iniciada implementação apenas da História 01 (Angular + CardMoeda vazio).
+**Context**: Construction U1 H01
+
+---
+
+## Construction H01 — Concluída
+**Timestamp**: 2026-07-27T01:55:00Z
+**User Input**: "prossiga com Construction"
+**AI Response**: H01 implementada: Angular em market-dashboard/frontend com CardMoeda, objeto exemplo Bitcoin, environment.apiBaseUrl. Build development OK. Aguardando validação manual ng serve.
+**Context**: Construction U1 H01 done
+
+---

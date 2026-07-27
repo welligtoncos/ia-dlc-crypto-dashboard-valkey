@@ -1,0 +1,22 @@
+.painel {
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(160deg, #f6f8fa 0%, #e8eef5 100%);
+  box-sizing: border-box;
+}
+
+.painel__header {
+  margin-bottom: 1.5rem;
+}
+
+.painel__header h1 {
+  margin: 0 0 0.35rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.75rem;
+}
+
+.painel__hint {
+  margin: 0;
+  color: #57606a;
+  font-size: 0.95rem;
+}

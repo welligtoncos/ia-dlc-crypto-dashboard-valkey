@@ -1,0 +1,21 @@
+<article class="card-moeda">
+  <h2 class="card-moeda__titulo">{{ dados.moeda }}</h2>
+  <dl class="card-moeda__campos">
+    <div>
+      <dt>Preço</dt>
+      <dd>{{ formatar(dados.preco) }}</dd>
+    </div>
+    <div>
+      <dt>Variação 24h</dt>
+      <dd>{{ formatar(dados.variacao_24h) }}</dd>
+    </div>
+    <div>
+      <dt>Média móvel</dt>
+      <dd>{{ formatar(dados.media_movel) }}</dd>
+    </div>
+    <div>
+      <dt>Volatilidade</dt>
+      <dd>{{ formatar(dados.volatilidade) }}</dd>
+    </div>
+  </dl>
+</article>
