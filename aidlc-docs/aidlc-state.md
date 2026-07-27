@@ -1,15 +1,13 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U1 — H04 concluída (Fase 1 esqueleto completa)
+CONSTRUCTION — U2 — H05 concluída (Valkey + wrapper)
 
 ## Progresso Construction
-- [x] H01 — App Angular com card vazio
-- [x] H02 — Endpoint mock + DashboardService
-- [x] H03 — Integração CoinGecko
-- [x] H04 — Fluxo ponta a ponta com dado real
-- [ ] H05 — Valkey local + wrapper de cache
-- [ ] H06 … H20
+- [x] H01–H04 — Fase 1
+- [x] H05 — Valkey local + wrapper de cache
+- [ ] H06 — Cache-aside TTL 60s
+- [ ] H07 … H20
 
 ## Próximo
-Após validar H04, plano da **H05** (Fase 2 — Cache).
+Após validar H05, plano da **H06**.

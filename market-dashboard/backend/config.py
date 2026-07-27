@@ -13,3 +13,8 @@ COINGECKO_VS_CURRENCY: str = os.getenv("COINGECKO_VS_CURRENCY", "usd")
 
 # Moeda exibida no dashboard (H04 — uma moeda; multi vem depois).
 DASHBOARD_COIN_ID: str = os.getenv("DASHBOARD_COIN_ID", "bitcoin")
+
+# Valkey (H05) — host/porta via env; no Compose o host é o nome do serviço.
+VALKEY_HOST: str = os.getenv("VALKEY_HOST", "localhost")
+VALKEY_PORT: int = int(os.getenv("VALKEY_PORT", "6379"))
+VALKEY_DB: int = int(os.getenv("VALKEY_DB", "0"))

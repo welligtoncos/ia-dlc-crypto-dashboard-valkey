@@ -1,5 +1,5 @@
 """
-BFF — Dashboard de Mercado (H04: dado real via CoinGecko, sem cache).
+BFF — Dashboard de Mercado.
 
 Contrato GET /api/dashboard (JSON):
 - moeda: str
@@ -10,15 +10,21 @@ Contrato GET /api/dashboard (JSON):
 - atualizado_em: str (ISO-8601)
 
 Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
+
+H05: healthcheck Valkey em GET /health — cache-aside na rota só na H06.
 """
 
 from datetime import datetime, timezone
+import logging
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import DASHBOARD_COIN_ID
+from services.cache import ping as valkey_ping
 from services.coingecko import CoinGeckoError, get_market_data
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="market-dashboard-bff", version="0.1.0")
 
@@ -32,6 +38,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+def log_valkey_connection() -> None:
+    ok = valkey_ping()
+    if ok:
+        logger.info("Valkey PING ok — BFF conectado ao cache")
+    else:
+        logger.warning("Valkey PING falhou no startup (BFF sobe mesmo assim)")
+
+
+@app.get("/health")
+def health() -> dict:
+    """Healthcheck: confirma se o BFF fala com o Valkey (PING)."""
+    ok = valkey_ping()
+    status = "ok" if ok else "degraded"
+    return {"status": status, "valkey": ok}
 
 
 @app.get("/api/dashboard")

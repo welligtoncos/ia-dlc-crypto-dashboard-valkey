@@ -1,0 +1,43 @@
+services:
+  valkey:
+    image: valkey/valkey:8
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      VALKEY_HOST: valkey
+      VALKEY_PORT: "6379"
+      DASHBOARD_COIN_ID: bitcoin
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+  # --- História 12 (Celery): descomentar / adicionar nestes slots ---
+  # worker:
+  #   build: ./backend
+  #   command: celery -A celery_app worker --loglevel=info
+  #   environment:
+  #     VALKEY_HOST: valkey
+  #     VALKEY_PORT: "6379"
+  #   depends_on:
+  #     - valkey
+  #     - backend
+  #
+  # beat:
+  #   build: ./backend
+  #   command: celery -A celery_app beat --loglevel=info
+  #   environment:
+  #     VALKEY_HOST: valkey
+  #     VALKEY_PORT: "6379"
+  #   depends_on:
+  #     - valkey
+  #     - worker

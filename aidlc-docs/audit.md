@@ -303,3 +303,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U1 H04 done — Fase 1 completa
 
 ---
+
+## Construction H05 — Concluída
+**Timestamp**: 2026-07-27T02:07:00Z
+**User Input**: "prossiga com h05"
+**AI Response**: H05: docker-compose (valkey+backend), services/cache.py, GET /health, Dockerfile, redis no requirements. Slots worker/beat comentados. Rota ainda sem cache-aside. Compose up validado.
+**Context**: Construction U2 H05 done
+
+---
