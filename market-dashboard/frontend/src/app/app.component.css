@@ -28,3 +28,9 @@
   border-radius: 6px;
   max-width: 28rem;
 }
+
+.painel__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}

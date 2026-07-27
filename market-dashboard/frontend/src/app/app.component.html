@@ -1,14 +1,18 @@
 <main class="painel">
   <header class="painel__header">
     <h1>Dashboard de Mercado</h1>
-    <p class="painel__hint">Dados reais via CoinGecko (H04 — sem cache)</p>
+    <p class="painel__hint">Múltiplas moedas via config (H11)</p>
   </header>
 
   @if (carregando) {
     <p>Carregando…</p>
   } @else if (erro) {
     <p class="painel__erro" role="alert">{{ erro }}</p>
-  } @else if (dados) {
-    <app-card-moeda [dados]="dados" />
+  } @else {
+    <div class="painel__grid">
+      @for (item of itens; track item.moeda) {
+        <app-card-moeda [dados]="item" />
+      }
+    </div>
   }
 </main>

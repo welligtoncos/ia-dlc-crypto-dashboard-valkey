@@ -1,5 +1,6 @@
 /**
- * Contrato alinhado a GET /api/dashboard (ver comentário em backend/main.py).
+ * Contrato de um item de GET /api/dashboard (H11: a API retorna DashboardItem[]).
+ * Ver comentário em backend/main.py.
  */
 export interface DashboardItem {
   moeda: string;

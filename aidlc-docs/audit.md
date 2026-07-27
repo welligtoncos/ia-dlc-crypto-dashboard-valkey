@@ -351,3 +351,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U3 H10 done
 
 ---
+
+## Construction H11 — Concluída
+**Timestamp**: 2026-07-27T02:20:30Z
+**User Input**: "prossiga com a proxima historia h11"
+**AI Response**: H11: DASHBOARD_COIN_IDS; /api/dashboard retorna lista; cache/série por moeda; falha parcial não derruba; Angular @for CardMoeda. Validado BTC/ETH/SOL.
+**Context**: Construction U4 H11 done
+
+---

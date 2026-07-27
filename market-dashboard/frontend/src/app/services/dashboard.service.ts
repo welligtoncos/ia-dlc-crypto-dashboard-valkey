@@ -9,7 +9,7 @@ export class DashboardService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  getDashboard(): Observable<DashboardItem> {
-    return this.http.get<DashboardItem>(`${this.baseUrl}/api/dashboard`);
+  getDashboard(): Observable<DashboardItem[]> {
+    return this.http.get<DashboardItem[]>(`${this.baseUrl}/api/dashboard`);
   }
 }

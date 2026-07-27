@@ -16,7 +16,7 @@ services:
     environment:
       VALKEY_HOST: valkey
       VALKEY_PORT: "6379"
-      DASHBOARD_COIN_ID: bitcoin
+      DASHBOARD_COIN_IDS: bitcoin,ethereum,solana
     depends_on:
       valkey:
         condition: service_healthy

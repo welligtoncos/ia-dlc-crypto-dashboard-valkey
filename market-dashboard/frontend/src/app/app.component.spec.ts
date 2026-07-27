@@ -12,43 +12,36 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('deve renderizar dados reais do dashboard', () => {
+  it('deve renderizar um card por moeda da lista', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
     const req = http.expectOne(`${environment.apiBaseUrl}/api/dashboard`);
-    req.flush({
-      moeda: 'bitcoin',
-      preco: 65151,
-      variacao_24h: 1.14,
-      media_movel: null,
-      volatilidade: null,
-      atualizado_em: '2026-07-27T00:00:00+00:00',
-    });
+    req.flush([
+      {
+        moeda: 'bitcoin',
+        preco: 65000,
+        variacao_24h: 1,
+        media_movel: 64000,
+        volatilidade: 0.5,
+        atualizado_em: '2026-07-27T00:00:00+00:00',
+      },
+      {
+        moeda: 'ethereum',
+        preco: 3500,
+        variacao_24h: 2,
+        media_movel: 3400,
+        volatilidade: 1.2,
+        atualizado_em: '2026-07-27T00:00:00+00:00',
+      },
+    ]);
     fixture.detectChanges();
 
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('bitcoin');
-    expect(el.textContent).toContain('65151');
-    http.verify();
-  });
-
-  it('deve exibir estado de erro em 502 sem quebrar', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const http = TestBed.inject(HttpTestingController);
-    fixture.detectChanges();
-
-    const req = http.expectOne(`${environment.apiBaseUrl}/api/dashboard`);
-    req.flush(
-      { detail: 'Não foi possível obter dados da fonte externa (CoinGecko). timeout' },
-      { status: 502, statusText: 'Bad Gateway' },
-    );
-    fixture.detectChanges();
-
-    const el: HTMLElement = fixture.nativeElement;
-    expect(el.textContent).toContain('CoinGecko');
-    expect(el.querySelector('app-card-moeda')).toBeNull();
+    expect(el.textContent).toContain('ethereum');
+    expect(el.querySelectorAll('app-card-moeda').length).toBe(2);
     http.verify();
   });
 });

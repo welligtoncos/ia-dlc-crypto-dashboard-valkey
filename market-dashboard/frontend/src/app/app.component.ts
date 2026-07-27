@@ -14,25 +14,25 @@ import { DashboardService } from './services/dashboard.service';
 export class AppComponent implements OnInit {
   private readonly dashboardService = inject(DashboardService);
 
-  dados: MoedaCard | null = null;
+  itens: MoedaCard[] = [];
   erro: string | null = null;
   carregando = true;
 
   ngOnInit(): void {
     this.dashboardService.getDashboard().subscribe({
-      next: (item) => {
-        this.dados = {
+      next: (lista) => {
+        this.itens = lista.map((item) => ({
           moeda: item.moeda,
           preco: item.preco,
           variacao_24h: item.variacao_24h,
           media_movel: item.media_movel,
           volatilidade: item.volatilidade,
-        };
+        }));
         this.erro = null;
         this.carregando = false;
       },
       error: (err: HttpErrorResponse) => {
-        this.dados = null;
+        this.itens = [];
         this.erro = this.mensagemErro(err);
         this.carregando = false;
       },

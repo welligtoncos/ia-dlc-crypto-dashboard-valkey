@@ -11,8 +11,14 @@ COINGECKO_BASE_URL: str = os.getenv(
 COINGECKO_TIMEOUT_SECONDS: float = float(os.getenv("COINGECKO_TIMEOUT_SECONDS", "10"))
 COINGECKO_VS_CURRENCY: str = os.getenv("COINGECKO_VS_CURRENCY", "usd")
 
-# Moeda exibida no dashboard (H04 — uma moeda; multi vem depois).
-DASHBOARD_COIN_ID: str = os.getenv("DASHBOARD_COIN_ID", "bitcoin")
+# Moedas do dashboard (H11) — lista separada por vírgula; nova moeda só na config.
+_DASHBOARD_COINS_RAW: str = os.getenv(
+    "DASHBOARD_COIN_IDS",
+    "bitcoin,ethereum,solana",
+)
+DASHBOARD_COIN_IDS: list[str] = [
+    c.strip() for c in _DASHBOARD_COINS_RAW.split(",") if c.strip()
+]
 
 # Valkey (H05) — host/porta via env; no Compose o host é o nome do serviço.
 VALKEY_HOST: str = os.getenv("VALKEY_HOST", "localhost")
