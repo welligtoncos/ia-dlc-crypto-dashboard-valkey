@@ -14,7 +14,8 @@ Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
 H05: GET /health (PING Valkey).
 H06: cache-aside com TTL configurável.
 H07: header X-Cache, log de latência, ?refresh=true.
-H08: no MISS, acumula preço na série Valkey (sem calcular indicadores).
+H08: no MISS, acumula preço na série Valkey.
+H09: no MISS, calcula media_movel a partir da série (indicators.py).
 """
 
 from __future__ import annotations
@@ -27,12 +28,20 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import CACHE_TTL_SECONDS, DASHBOARD_COIN_ID, SERIES_MAX_POINTS
+from config import (
+    CACHE_TTL_SECONDS,
+    DASHBOARD_COIN_ID,
+    SERIES_MAX_POINTS,
+    SMA_WINDOW,
+)
 from services.cache import append_preco
 from services.cache import get as cache_get
+from services.cache import get_ultimos_precos
 from services.cache import ping as valkey_ping
 from services.cache import set as cache_set
 from services.coingecko import CoinGeckoError, get_market_data
+from services.indicators import media_movel
+
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -129,11 +138,15 @@ def get_dashboard(
         SERIES_MAX_POINTS,
     )
 
+    # H09: cálculo só em indicators.py; rota apenas lê a série e orquestra.
+    precos = get_ultimos_precos(coin_id, SMA_WINDOW)
+    sma = media_movel(precos)
+
     payload: dict[str, Any] = {
         "moeda": coin_id,
         "preco": preco,
         "variacao_24h": market["variacao_24h"],
-        "media_movel": None,
+        "media_movel": sma,
         "volatilidade": None,
         "atualizado_em": datetime.now(timezone.utc).isoformat(),
     }

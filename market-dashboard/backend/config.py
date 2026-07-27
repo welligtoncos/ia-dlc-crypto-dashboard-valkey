@@ -24,3 +24,6 @@ CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
 
 # Série temporal (H08) — máximo de pontos por moeda.
 SERIES_MAX_POINTS: int = int(os.getenv("SERIES_MAX_POINTS", "100"))
+
+# Indicadores (H09) — quantos preços recentes usar na média móvel.
+SMA_WINDOW: int = int(os.getenv("SMA_WINDOW", "20"))

@@ -1,13 +1,13 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U3 — H08 concluída (série temporal)
+CONSTRUCTION — U3 — H09 concluída (média móvel)
 
 ## Progresso Construction
-- [x] H01–H07 — Fases 1–2
-- [x] H08 — Série temporal de preços (ZSET)
-- [ ] H09 — Média móvel
-- [ ] H10 … H20
+- [x] H01–H08
+- [x] H09 — Média móvel
+- [ ] H10 — Volatilidade
+- [ ] H11 … H20
 
 ## Próximo
-Após validar H08, plano da **H09**.
+Após validar H09, plano da **H10**.

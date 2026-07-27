@@ -335,3 +335,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U3 H08 done
 
 ---
+
+## Construction H09 — Concluída
+**Timestamp**: 2026-07-27T02:16:00Z
+**User Input**: "prossiga com h09"
+**AI Response**: H09: indicators.media_movel; rota no MISS lê série e preenche media_movel; assert [100,102,101,103,104]==102; dashboard retornou media_movel numérica. Sem volatilidade.
+**Context**: Construction U3 H09 done
+
+---
