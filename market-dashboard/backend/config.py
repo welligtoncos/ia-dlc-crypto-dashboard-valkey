@@ -3,6 +3,17 @@
 import os
 
 
+def _csv_env(name: str, default: str) -> list[str]:
+    raw = os.getenv(name, default)
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+# CORS (H19) — origens permitidas (localhost + CloudFront em prod via env).
+CORS_ORIGINS: list[str] = _csv_env(
+    "CORS_ORIGINS",
+    "http://localhost:4200,http://127.0.0.1:4200",
+)
+
 # API pública keyless: ~10–50 req/min — evite polling agressivo (cache vem nas próximas histórias).
 COINGECKO_BASE_URL: str = os.getenv(
     "COINGECKO_BASE_URL",

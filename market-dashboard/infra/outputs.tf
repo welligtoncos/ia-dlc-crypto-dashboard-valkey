@@ -87,3 +87,23 @@ output "ecs_tasks_security_group_id" {
   description = "SG das tasks Fargate."
   value       = aws_security_group.ecs_tasks.id
 }
+
+output "frontend_bucket_name" {
+  description = "Bucket S3 privado do build Angular."
+  value       = aws_s3_bucket.frontend.id
+}
+
+output "cloudfront_distribution_id" {
+  description = "ID da distribuicao CloudFront (para invalidacao)."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "cloudfront_url" {
+  description = "URL HTTPS do frontend (dominio padrao CloudFront)."
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}
+
+output "cloudfront_domain_name" {
+  description = "Domain name da distribuicao CloudFront."
+  value       = aws_cloudfront_distribution.frontend.domain_name
+}

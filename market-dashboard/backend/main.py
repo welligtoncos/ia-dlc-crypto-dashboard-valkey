@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import DASHBOARD_COIN_IDS
+from config import CORS_ORIGINS, DASHBOARD_COIN_IDS
 from services.cache import get as cache_get
 from services.cache import ping as valkey_ping
 from services.coingecko import CoinGeckoError
@@ -37,10 +37,7 @@ app = FastAPI(title="market-dashboard-bff", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:4200",
-        "http://127.0.0.1:4200",
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,6 +53,7 @@ def log_valkey_connection() -> None:
     else:
         logger.warning("Valkey PING falhou no startup (BFF sobe mesmo assim)")
     logger.info("moedas configuradas: %s", DASHBOARD_COIN_IDS)
+    logger.info("CORS_ORIGINS: %s", CORS_ORIGINS)
 
 
 @app.get("/health")

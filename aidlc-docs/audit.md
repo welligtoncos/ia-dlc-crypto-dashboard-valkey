@@ -479,3 +479,27 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U5 H17 awaiting apply
 
 ---
+
+## Construction H18 — Aprovação do plano
+**Timestamp**: 2026-07-27T03:07:30Z
+**User Input**: "ok"
+**AI Response**: Plano H18 aprovado; criando frontend.tf (S3 privado + CloudFront OAC + SPA fallback).
+**Context**: Construction U5 H18
+
+---
+
+## Construction H18 — Código + plan
+**Timestamp**: 2026-07-27T03:09:00Z
+**User Input**: "ok"
+**AI Response**: H18: frontend.tf S3 privado + OAC + CF SPA 403/404; outputs cloudfront_url; docs sync. Plan: 6 to add.
+**Context**: Construction U5 H18 awaiting apply
+
+---
+
+## Construction H19 — Concluída
+**Timestamp**: 2026-07-27T03:27:00Z
+**User Input**: "OK"
+**AI Response**: H19: CORS_ORIGINS; CF origin ALB /api+/health; environment.prod → CloudFront; apply+FE sync. GET CF/api/dashboard 200.
+**Context**: Construction U5 H19 done
+
+---

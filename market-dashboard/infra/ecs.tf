@@ -8,6 +8,13 @@ locals {
 
   celery_broker_url = "redis://${aws_elasticache_replication_group.valkey.primary_endpoint_address}:${aws_elasticache_replication_group.valkey.port}/0"
 
+  cors_origins = join(",", [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+    "https://${aws_cloudfront_distribution.frontend.domain_name}",
+    "http://${aws_cloudfront_distribution.frontend.domain_name}",
+  ])
+
   common_environment = [
     { name = "VALKEY_HOST", value = aws_elasticache_replication_group.valkey.primary_endpoint_address },
     { name = "VALKEY_PORT", value = tostring(aws_elasticache_replication_group.valkey.port) },
@@ -17,6 +24,7 @@ locals {
     { name = "DASHBOARD_COIN_IDS", value = var.dashboard_coin_ids },
     { name = "BEAT_INTERVAL_SECONDS", value = tostring(var.beat_interval_seconds) },
     { name = "CACHE_TTL_SECONDS", value = tostring(var.cache_ttl_seconds) },
+    { name = "CORS_ORIGINS", value = local.cors_origins },
   ]
 }
 

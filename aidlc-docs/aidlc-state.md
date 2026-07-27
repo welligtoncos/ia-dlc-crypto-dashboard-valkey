@@ -1,16 +1,16 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U5 — H17 código pronto (plan 19 to add; apply manual)
+CONSTRUCTION — U5 — H19 **validada** (CloudFront → ALB + FE prod)
 
 ## Progresso Construction
-- [x] H01–H16
-- [x] H17 — ECS tf + plan ok (apply/validação ALB pendente)
-- [ ] H18 — S3 + CloudFront
-- [ ] H19 … H20
+- [x] H01–H19
+- [ ] H20 — CI/CD (opcional)
+
+## H19 — Evidência
+- `GET https://d1tc2mou5q4ezo.cloudfront.net/api/dashboard` → 200 JSON
+- FE prod usa CloudFront como apiBaseUrl (mesma origem; CF encaminha ao ALB)
+- CORS_ORIGINS no BFF/ECS; Valkey SG ← tasks
 
 ## Próximo
-1) Garantir imagem no ECR  
-2) `terraform apply`  
-3) `curl http://<alb_dns>/api/dashboard`  
-Depois plano **H18**.
+Plano **H20** (opcional) ou `terraform destroy` ao fim da sessão.

@@ -128,3 +128,84 @@ curl.exe -i "http://$(terraform output -raw alb_dns_name)/health"
 - Logs: `/ecs/market-dashboard/{bff,worker,beat}` no CloudWatch.
 
 Custo: ALB + Fargate + Valkey. Ao fim: `terraform destroy`.
+
+## H18 — Frontend Angular (S3 + CloudFront)
+
+Bucket **privado** + CloudFront com **OAC** (sem acesso público direto ao S3).  
+API do Angular → ALB e CORS = **H19**.
+
+```powershell
+cd market-dashboard\infra
+terraform plan
+terraform apply
+terraform output cloudfront_url
+terraform output frontend_bucket_name
+```
+
+### Build, sync e invalidação
+
+```powershell
+cd market-dashboard\frontend
+npm ci
+npm run build
+# Angular 19 application builder: saida em dist\frontend\browser
+
+# PowerShell: aspas obrigatorias em -chdir=...
+$BUCKET = (terraform "-chdir=..\infra" output -raw frontend_bucket_name)
+$DIST_ID = (terraform "-chdir=..\infra" output -raw cloudfront_distribution_id)
+
+aws s3 sync dist\frontend\browser "s3://$BUCKET/" --delete
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+terraform "-chdir=..\infra" output cloudfront_url
+```
+
+Alternativa sem `-chdir`:
+
+```powershell
+cd ..\infra
+$BUCKET = (terraform output -raw frontend_bucket_name)
+$DIST_ID = (terraform output -raw cloudfront_distribution_id)
+cd ..\frontend
+aws s3 sync dist\frontend\browser "s3://$BUCKET/" --delete
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+```
+
+
+Abra a URL do CloudFront — a shell do Angular deve carregar (dados da API na H19).
+
+## H19 — Amarração (API + CORS)
+
+- Angular prod (`environment.prod.ts`): `apiBaseUrl` = URL HTTPS do CloudFront.
+- CloudFront encaminha `/api/*` e `/health` ao ALB (sem mixed content).
+- BFF: `CORS_ORIGINS` via env (localhost + CloudFront).
+- Valkey: ingress apenas do SG das tasks (H17).
+- Sem segredos em texto no código; endpoint Valkey só via env da task.
+
+Após mudar o BFF:
+
+```powershell
+# 1) terraform (CloudFront behaviors + env CORS)
+cd market-dashboard\infra
+terraform apply
+
+# 2) nova imagem BFF + force deploy
+$REPO = (terraform output -raw ecr_repository_url)
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ($REPO.Split('/')[0])
+cd ..\backend
+docker build -t market-dashboard-backend:latest .
+docker tag market-dashboard-backend:latest "${REPO}:latest"
+docker push "${REPO}:latest"
+aws ecs update-service --cluster market-dashboard-cluster --service market-dashboard-bff --force-new-deployment --region us-east-1
+
+# 3) rebuild FE prod + sync
+cd ..\frontend
+npm run build
+$BUCKET = (terraform "-chdir=..\infra" output -raw frontend_bucket_name)
+$DIST_ID = (terraform "-chdir=..\infra" output -raw cloudfront_distribution_id)
+aws s3 sync dist\frontend\browser "s3://$BUCKET/" --delete
+aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+# 4) teste
+curl.exe -i "https://$(terraform "-chdir=..\infra" output -raw cloudfront_domain_name)/api/dashboard"
+```
