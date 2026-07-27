@@ -1,46 +1,15 @@
-# Mapa Histórias → Unidades
+# Mapa Histórias → Unidades — revisão
 
-## Visão geral
-
-| Unidade | Épico | Histórias |
+| Unidade | Fase | Histórias |
 |---|---|---|
-| U1 | E1 BFF + local | US-BFF-01 … US-BFF-06 |
-| U2 | E2 Frontend | US-FE-01 … US-FE-03 |
-| U3 | E3 Infra | US-INF-01 … US-INF-04 |
+| U1 | 1 Esqueleto | H01, H02, H03, H04 |
+| U2 | 2 Cache | H05, H06, H07 |
+| U3 | 3 Série/cálculos | H08, H09, H10 |
+| U4 | 4 Amadurecimento | H11, H12, H13 |
+| U5 | 5 AWS | H14, H15, H16, H17, H18, H19 |
+| U6 | 6 CI/CD | H20 |
 
-**Cobertura**: 13/13 histórias atribuídas. Nenhuma história órfã.
+**Cobertura:** 20/20. Nenhuma órfã.
 
----
-
-## U1 — checklist de implementação
-
-| Ordem | História | Resumo |
-|---|---|---|
-| 1 | US-BFF-01 | Stack local Compose (Valkey+backend+frontend) |
-| 2 | US-BFF-02 | Configuração BFF (env/config.py) |
-| 3 | US-BFF-03 | Cliente CoinGecko |
-| 4 | US-BFF-04 | Wrapper cache Valkey |
-| 5 | US-BFF-05 | Cálculo de indicadores (+ PBT na construção) |
-| 6 | US-BFF-06 | API indicadores com cache e degradação |
-
-## U2 — checklist de implementação
-
-| Ordem | História | Resumo |
-|---|---|---|
-| 1 | US-FE-01 | App Angular + environment |
-| 2 | US-FE-02 | Serviço HttpClient |
-| 3 | US-FE-03 | Tabela + atualizar + degradação UI |
-
-## U3 — checklist de implementação
-
-| Ordem | História | Resumo |
-|---|---|---|
-| 1 | US-INF-01 | Rede VPC |
-| 2 | US-INF-02 | ElastiCache Valkey |
-| 3 | US-INF-03 | ECR + ECS Fargate + ALB |
-| 4 | US-INF-04 | S3 + CloudFront |
-
----
-
-## Persona
-Todas as histórias: **Visitante do Painel** (beneficiário).
+### Checklist de construção (ordem estrita)
+H01→H02→H03→H04→H05→H06→H07→H08→H09→H10→H11→H12→H13→H14→H15→H16→H17→H18→H19→[H20]

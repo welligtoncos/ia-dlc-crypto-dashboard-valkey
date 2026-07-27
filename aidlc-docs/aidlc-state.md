@@ -1,49 +1,37 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Informações do Projeto
-- **Nome do Projeto**: market-dashboard
-- **Tipo de Projeto**: Greenfield
-- **Data de Início**: 2026-07-27T00:50:00Z
-- **Estágio Atual**: CONSTRUCTION — U1 — Design Funcional
-- **Idioma do Processo**: Português (obrigatório)
+- **Nome**: market-dashboard
+- **Tipo**: Greenfield
+- **Idioma**: Português
+- **Estágio Atual**: CONSTRUCTION — U1 — H01 (aguardando OK do plano)
+- **Fonte normativa**: `aidlc-docs/inception/requirements/prompts-fonte-normativa.md`
+- **Inception v2 aprovado em**: 2026-07-27T01:50:00Z
+
+## Extensões
+| Extensão | Habilitada |
+|---|---|
+| Security Baseline | Não |
+| Resiliency Baseline | Não |
+| Property-Based Testing | Sim |
 
 ## Unidades
-| Unidade | Nome | Status |
+| Unidade | Histórias | Status |
 |---|---|---|
-| U1 | BFF + Compose + indicadores | EM ANDAMENTO |
-| U2 | Frontend Angular | Pendente |
-| U3 | Infra Terraform AWS | Pendente |
+| U1 | H01–H04 | EM ANDAMENTO (H01) |
+| U2 | H05–H07 | Pendente |
+| U3 | H08–H10 | Pendente |
+| U4 | H11–H13 | Pendente |
+| U5 | H14–H19 | Pendente |
+| U6 | H20 | Opcional |
 
-## Configuração de Extensões
-| Extensão | Habilitada | Modo |
-|---|---|---|
-| Security Baseline | Não | — |
-| Resiliency Baseline | Não | — |
-| Property-Based Testing | Sim | Completo (bloqueante) |
+## Progresso
+### 🔵 INCEPTION v2 — COMPLETO (aprovado)
+- [x] Requisitos, Histórias (20), Fluxo, Design, Unidades
 
-## Progresso dos Estágios
-### 🔵 FASE DE INCEPTION — COMPLETA
-- [x] Detecção do Workspace
-- [x] Engenharia Reversa (SKIP)
-- [x] Análise de Requisitos
-- [x] Histórias de Usuário
-- [x] Planejamento do Fluxo
-- [x] Design da Aplicação
-- [x] Geração de Unidades (aprovada)
+### 🟢 CONSTRUCTION
+- [ ] H01 — App Angular com card vazio (plano apresentado)
+- [ ] H02 … H20
 
-### 🟢 FASE DE CONSTRUÇÃO
-- [ ] U1 Design Funcional (EM ANDAMENTO)
-- [ ] U1 NFR Requisitos
-- [ ] U1 NFR Design
-- [ ] U1 Design de Infraestrutura (SKIP previsto)
-- [ ] U1 Geração de Código
-- [ ] U2 …
-- [ ] U3 …
-- [ ] Build e Testes
-
-### 🟡 FASE DE OPERAÇÕES
-- [ ] Operações — PLACEHOLDER
-
-## Inception encerrado em
-- **Timestamp**: 2026-07-27T01:43:00Z
-- **Próximo**: Construction U1 — Design Funcional
+### 🟡 OPERATIONS
+- [ ] Placeholder

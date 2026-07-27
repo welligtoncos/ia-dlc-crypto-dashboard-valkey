@@ -1,18 +1,10 @@
-# Personas — market-dashboard
+# Personas — market-dashboard (revisão)
 
-## P1 — Visitante do Painel
+## P1 — Usuário do Painel
+Consulta o dashboard Angular para ver preço, variação, média móvel e volatilidade. Não calcula nada no cliente.
 
-| Atributo | Descrição |
-|---|---|
-| **Nome** | Visitante do Painel |
-| **Tipo** | Usuário anônimo (painel público de estudo) |
-| **Objetivo** | Consultar rapidamente preço, variação %, SMA e volatilidade de BTC, ETH e SOL |
-| **Motivações** | Entender o mercado cripto sem instalar ferramentas; ver dados atualizados sob demanda |
-| **Comportamento** | Abre o painel, lê a tabela de indicadores e usa o botão atualizar quando quiser dados frescos |
-| **Dores** | Dados demorando, tela vazia sem feedback, números inconsistentes ou sem contexto de falha da fonte |
-| **Expectativas** | Interface simples; indicadores já calculados; se a fonte externa falhar, ainda ver último dado disponível com aviso de degradação |
-| **Não é** | Administrador, trader autenticado ou operador de infra — não há login |
+## P2 — Sistema / Desenvolvedor
+Implementa BFF, cache, pipeline, Celery e observabilidade HIT/MISS; valida Compose e integrações.
 
-### Relação com o sistema
-- Consome apenas o **frontend Angular**.
-- Beneficia-se indiretamente do BFF, Valkey, Compose e da infra AWS (histórias técnicas escritas com o Visitante como beneficiário).
+## P3 — Operador
+Provisiona AWS com Terraform, amarra rede/segredos/CORS e (opcional) CI/CD; destrói recursos ao fim do estudo.

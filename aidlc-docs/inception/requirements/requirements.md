@@ -1,164 +1,126 @@
-# Requisitos — market-dashboard
+# Requisitos — market-dashboard (revisão Inception)
 
-## 1. Resumo da Análise de Intenção
+## 1. Fonte normativa
+Documento do usuário: `prompts-ai-dlc-dashboard-mercado (1).md`  
+Cópia no repo: `aidlc-docs/inception/requirements/prompts-fonte-normativa.md`
+
+Este Inception **substitui** a versão anterior (sem Celery, `/api/indicators`, tabela).
+
+## 2. Resumo da intenção
 
 | Dimensão | Valor |
 |---|---|
-| Pedido do usuário | Construir, em etapas, um dashboard de mercado cripto com padrão BFF, frontend Angular e provisionamento AWS via Terraform |
-| Tipo de pedido | Novo projeto (greenfield) |
-| Escopo | System-wide (BFF, cache, frontend, infra) |
-| Complexidade | Moderada–Alta |
-| Profundidade | Standard / Comprehensive |
-| Idioma do processo | Português (obrigatório) |
+| Tipo | Greenfield — dashboard de mercado BFF |
+| Escopo | Angular + FastAPI + Valkey + Celery + Terraform AWS (+ CI/CD opcional) |
+| Complexidade | Alta |
+| Idioma do processo | Português |
+| Entrega | **20 histórias** em 6 fases; uma história por vez |
 
-### Contexto fixo (todas as tarefas)
-- Frontend Angular **apenas apresenta**; toda lógica de negócio e indicadores ficam no BFF.
-- Valkey armazena dados para o BFF não refazer trabalho.
-- Em produção, tudo roda na AWS.
-- Antes de código: plano curto da unidade + OK do usuário.
-- Implementar **apenas** a história atual; não antecipar histórias futuras.
-- Ao terminar: listar criados/alterados + como testar manualmente.
-- Em infra: mostrar `terraform plan` esperado antes de sugerir `apply`; lembrar `terraform destroy` ao fim.
+## 3. Objetivo
+Painel web com indicadores de criptomoedas (preço, variação %, média móvel, volatilidade).  
+Angular só apresenta; lógica no BFF; Valkey = cache + série temporal + broker/result Celery; worker/beat pré-calculam; produção na AWS.
 
----
-
-## 2. Stack e Estrutura
-
-### 2.1 Stack
+## 4. Stack
 | Camada | Tecnologia |
 |---|---|
-| Frontend | Angular v17+ (standalone components, HttpClient); sem lógica de negócio |
-| Backend (BFF) | Python 3.11 + FastAPI (Uvicorn), containerizado (Dockerfile) |
-| Cache | Valkey via redis-py; local Docker Compose; AWS ElastiCache for Valkey |
-| Fonte externa | API pública CoinGecko |
-| Infra | Terraform: VPC, ECR, ECS Fargate, ALB, ElastiCache Valkey, S3, CloudFront |
+| Frontend | Angular 17+ standalone, HttpClient; S3 + CloudFront em prod |
+| BFF | Python 3.11, FastAPI, Uvicorn, Docker |
+| Assíncrono | Celery worker + beat; Valkey como broker e result backend |
+| Cache/série/broker | Valkey (redis-py); Compose local; ElastiCache na AWS |
+| Fonte | CoinGecko API pública |
+| Infra | Terraform: VPC, ECR, ECS Fargate, ALB, ElastiCache, S3, CloudFront |
 
-### 2.2 Estrutura de pastas (obrigatória)
+## 5. Estrutura de pastas (obrigatória)
 ```text
 market-dashboard/
   backend/
     main.py
     config.py
+    celery_app.py
+    tasks.py
     services/coingecko.py
     services/cache.py
     services/indicators.py
+    services/pipeline.py
     Dockerfile
     requirements.txt
-  frontend/                 # ng new
-    src/app/...
+  frontend/
   infra/
     main.tf variables.tf outputs.tf
     network.tf ecr.tf elasticache.tf ecs.tf frontend.tf
-  docker-compose.yml        # Valkey + backend + frontend (tudo containerizado)
+  docker-compose.yml   # valkey + backend + worker + beat
 ```
 
----
+## 6. Requisitos funcionais (por fase)
 
-## 3. Requisitos Funcionais
+### Fase 1 — Esqueleto (H1–H4)
+- RF-F1-01: Card Angular (`CardMoeda`) com campos e "—" / dados via `@Input`
+- RF-F1-02: `GET /api/dashboard` mock + `DashboardService` + CORS
+- RF-F1-03: Cliente CoinGecko `get_market_data(coin_id)`
+- RF-F1-04: Fluxo ponta a ponta real (sem cache)
 
-### RF-01 — Painel de indicadores
-O sistema deve exibir, por criptomoeda, os indicadores:
-- Preço atual
-- Variação percentual (24h)
-- Média móvel simples (SMA)
-- Volatilidade
+### Fase 2 — Cache (H5–H7)
+- RF-F2-01: Compose Valkey+backend; wrapper cache sem negócio
+- RF-F2-02: Cache-aside chave `dashboard:bitcoin:indicadores`, TTL 60s
+- RF-F2-03: Header `X-Cache: HIT|MISS` + logs; opcional `?refresh=true`
 
-**Moedas (1ª entrega):** conjunto fixo Bitcoin (BTC), Ethereum (ETH) e Solana (SOL).
+### Fase 3 — Série e indicadores (H8–H10)
+- RF-F3-01: Série `serie:bitcoin:precos` (últimos N)
+- RF-F3-02: `media_movel` em `indicators.py`
+- RF-F3-03: `volatilidade` em `indicators.py` (documentar fórmula)
 
-### RF-02 — Cálculos no BFF
-- SMA de **7 períodos** e volatilidade como **desvio-padrão percentual dos retornos diários (janela 7)**, ambos configuráveis em `config.py`.
-- **NUNCA** calcular indicadores no frontend.
-- **NUNCA** colocar lógica de negócio no wrapper de cache (`services/cache.py`).
-- Isolar responsabilidades: fonte externa, cache, cálculo, rotas.
+### Fase 4 — Amadurecimento (H11–H13)
+- RF-F4-01: Múltiplas moedas via `config.py`; lista no `/api/dashboard`
+- RF-F4-02: `pipeline.py` compartilhado; Celery worker
+- RF-F4-03: Celery Beat batch periódico; um único beat
 
-### RF-03 — Cache Valkey
-- Cache de respostas/séries com TTL curto (ex.: **60s** preços, **300s** histórico).
-- Chaves por moeda/endpoint.
-- TTLs e hosts via `config.py` / variáveis de ambiente.
+### Fase 5 — AWS (H14–H19)
+- RF-F5-01…06: VPC → ECR → ElastiCache → ECS (BFF+worker+beat)+ALB → S3/CloudFront → amarração SG/CORS/env
+- Aviso de custo; tiers baratos; `terraform destroy` ao fim
 
-### RF-04 — Resiliência à CoinGecko
-Tratar falha, demora ou formato inesperado:
-- Se houver cache válido ou stale: devolver dados em cache com **flag de degradação**.
-- Caso contrário: HTTP **502/503** com mensagem clara.
+### Fase 6 — CI/CD opcional (H20)
+- RF-F6-01: Pipeline push → ECR/ECS (3 serviços) + S3/CloudFront
 
-### RF-05 — Frontend Angular
-- Tabela/lista simples: moeda, preço, variação %, SMA, volatilidade + botão atualizar.
-- URL base da API via `environment` (sem hardcode no componente).
-- Sem autenticação (painel público de estudo).
+## 7. Contrato da API (evolutivo)
+Campo base (mock H2, depois real):
+```json
+{
+  "moeda": "bitcoin",
+  "preco": 100000,
+  "variacao_24h": 2.5,
+  "media_movel": null,
+  "volatilidade": null,
+  "atualizado_em": "<ISO>"
+}
+```
+A partir de H11: lista desses objetos. Nomes alinhados FE/BE.
 
-### RF-06 — Ambiente local
-`docker-compose.yml` sobe **Valkey + backend + frontend** (tudo containerizado).
+## 8. Requisitos não funcionais
+- RNF-01: Type hints; SRP; sem segredos hardcoded
+- RNF-02: Pipeline único MISS (rota e task) — sem duplicar lógica
+- RNF-03: Erros CoinGecko tratados (timeout/HTTP/formato)
+- RNF-04: Custo AWS controlado (t4g.micro / Fargate mínimo; destroy)
+- RNF-05: Outputs Terraform: DNS ALB, URL CDN, endpoint Valkey
+- RNF-06: Extensões (herdadas até nova decisão): Security Não, Resiliency Não, PBT Sim (útil em H9–H10)
 
-### RF-07 — Fatiamento da construção
-Ordem das unidades/histórias:
-1. BFF + Valkey local + indicadores  
-2. Frontend Angular  
-3. Infra Terraform AWS  
+## 9. Regras de interação AI-DLC
+- Plano curto + OK antes de código
+- Só a história atual
+- Listar arquivos + teste manual ao fim
+- Infra: `plan` antes de `apply`; lembrar `destroy`
 
-### RF-08 — Infraestrutura AWS (estudo)
-- Região default: `us-east-1`
-- Variáveis para região e tamanhos; tiers mais baratos
-- Outputs úteis: DNS do ALB, URL do CDN
-- Sem segredos hardcoded (env / variáveis Terraform)
+## 10. Fora de escopo global (salvo histórias que pedirem)
+- Auth, WAF, HTTPS custom, multi-ambiente staging/prod
+- Prometheus/métricas avançadas (H7 = header+log)
+- Indicadores extras (RSI etc.)
+- NAT Gateway (trade-off: Fargate em subnet pública com IP público)
 
----
-
-## 4. Requisitos Não Funcionais
-
-### RNF-01 — Qualidade de código
-- Type hints no Python; funções pequenas de responsabilidade única.
-- Sem segredos no código.
-
-### RNF-02 — Custo
-- Projeto de estudo: recursos AWS nos tiers mais baratos; destruir ao fim (`terraform destroy`).
-
-### RNF-03 — Testabilidade (PBT habilitado)
-- Extensão **Property-Based Testing** habilitada: regras PBT são restrições bloqueantes.
-- Foco especial em funções puras de indicadores e transformações de dados.
-
-### RNF-04 — Segurança / Resiliência (extensões)
-- Security Baseline: **desabilitada** (PoC/estudo).
-- Resiliency Baseline: **desabilitada** (iteração rápida).
-- Ainda assim vale o RF-04 (degradação com cache) como requisito funcional explícito do produto.
-
-### RNF-05 — Idioma
-- Todo o processo AI-DLC (chat, artefatos, planos, aprovações) em **português**.
-
----
-
-## 5. Fora de Escopo (1ª entrega / decisões atuais)
-- Autenticação de usuários
-- Top dinâmico por market cap
-- Market cap como indicador
-- Extensões Security e Resiliency Baseline
-- Recursos AWS “gigantes” ou multi-região avançada
-
----
-
-## 6. Critérios de Sucesso
-- BFF expõe indicadores calculados para BTC, ETH e SOL com cache Valkey.
-- Frontend consome o BFF e exibe tabela + atualizar, sem lógica de negócio.
-- Compose local sobe stack completa.
-- Terraform provisiona stack mínima em `us-east-1` com outputs ALB/CDN.
-- Construção respeita ordem das 3 unidades e regras de interação AI-DLC.
-
----
-
-## 7. Decisões Registradas (perguntas)
-
-| # | Decisão |
+## 11. Decisões que invalidam o Inception anterior
+| Anterior | Novo (fonte) |
 |---|---|
-| 1 | Moedas: BTC, ETH, SOL (fixo) |
-| 2 | Indicadores: preço, var% 24h, SMA, volatilidade |
-| 3 | SMA 7 / volatilidade janela 7, via config |
-| 4 | Cache respostas/séries com TTL curto por moeda/endpoint |
-| 5 | Cache stale + flag degradação; senão 502/503 |
-| 6 | Sem autenticação |
-| 7 | UI: tabela + botão atualizar |
-| 8 | Unidades: BFF → Frontend → Infra |
-| 9 | Compose: Valkey + backend + frontend |
-| 10 | AWS us-east-1, tiers baratos |
-| 11 | Processo em português |
-| 12 | Security Baseline: Não |
-| 13 | Resiliency Baseline: Não |
-| 14 | PBT: Sim (bloqueante) |
+| Sem Celery | Celery worker + beat |
+| `/api/indicators` | `/api/dashboard` |
+| Tabela + botão atualizar | Cards `CardMoeda` |
+| `MarketIndicatorsService` | `services/pipeline.py` |
+| Compose com frontend | Compose: valkey+backend+worker+beat |
+| 13 histórias / 3 unidades | **20 histórias / 6 fases (= unidades)** |

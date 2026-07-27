@@ -1,80 +1,27 @@
-# Unidades de Trabalho — market-dashboard
+# Unidades de Trabalho — revisão (6 fases)
 
-## Organização de código (greenfield)
+Código em `market-dashboard/` (backend, frontend, infra, docker-compose.yml).
 
-```text
-market-dashboard/
-  backend/                 # U1
-  frontend/                # U2 (placeholder possível na U1 via Compose)
-  infra/                   # U3
-  docker-compose.yml       # U1 (Valkey + backend + frontend)
-```
+## U1 — Fase 1 Esqueleto (H01–H04)
+Angular card + BFF mock + CoinGecko + ponta a ponta sem cache.  
+Compose ainda não obrigatório (H05). FE via `ng serve`; BE via uvicorn.
 
-Raiz do workspace AI-DLC: `c:\welligton-aws\ia-dlc-crypto-dashboard-valkey`  
-Código da aplicação: sob `market-dashboard/` (nunca em `aidlc-docs/`).
+## U2 — Fase 2 Cache (H05–H07)
+Compose Valkey+backend; cache-aside TTL 60s; X-Cache.
 
----
+## U3 — Fase 3 Série/cálculos (H08–H10)
+Série temporal; média móvel; volatilidade; PBT recomendado nos puros.
 
-## U1 — BFF + Valkey local + indicadores
+## U4 — Fase 4 Amadurecimento (H11–H13)
+Multi-moedas; pipeline + Celery worker; Celery Beat.
 
-| Atributo | Valor |
-|---|---|
-| **Tipo** | Serviço (container FastAPI) + runtime local Compose |
-| **Responsabilidade** | Config, CoinGecko, cache Valkey, indicadores, `MarketIndicatorsService`, API `GET /api/indicators`, Compose completo |
-| **Componentes** | AppConfig, MarketDataSource, CacheStore, IndicatorsEngine, MarketIndicatorsService, ApiRoutes, LocalStackRuntime |
-| **Pasta** | `market-dashboard/backend/` + `docker-compose.yml` |
-| **Deploy** | Container BFF; local via Compose (Valkey+backend+frontend; FE pode ser placeholder até U2) |
-| **Checklist interno** | US-BFF-01 → US-BFF-06 |
-| **Estágios Construction** | Design Funcional EXECUTE; NFR EXECUTE (PBT/TTL); Infra Design SKIP; Code Gen EXECUTE |
+## U5 — Fase 5 AWS (H14–H19)
+Terraform VPC→ECR→ElastiCache→ECS×3+ALB→S3/CF→amarração.  
+Sempre `plan` antes de `apply`; `destroy` ao fim.
 
-### Critério de pronto da unidade
-- Endpoint de indicadores para BTC/ETH/SOL com cache e degradação
-- Compose sobe a stack local
-- Sem lógica de indicadores no cache wrapper
+## U6 — Fase 6 CI/CD (H20) — opcional
+GitHub Actions deploy BE+FE.
 
----
-
-## U2 — Frontend Angular
-
-| Atributo | Valor |
-|---|---|
-| **Tipo** | Módulo/artefato estático (SPA) |
-| **Responsabilidade** | App Angular standalone, environment, HttpClient, tabela + atualizar + avisos de degradação |
-| **Componentes** | MarketApiService, DashboardComponent |
-| **Pasta** | `market-dashboard/frontend/` |
-| **Deploy** | Build estático; Compose atualizado se o FE da U1 era placeholder |
-| **Checklist interno** | US-FE-01 → US-FE-03 |
-| **Estágios Construction** | Design Funcional SKIP/mínimo; NFR mínimo; Infra Design SKIP; Code Gen EXECUTE |
-
-### Critério de pronto da unidade
-- Painel consome só o BFF; sem cálculos no cliente
-- URL da API via environment
-
----
-
-## U3 — Infra Terraform AWS
-
-| Atributo | Valor |
-|---|---|
-| **Tipo** | IaC (não é serviço de domínio) |
-| **Responsabilidade** | Provisionar Network, ElastiCache Valkey, ECR/ECS/ALB, S3/CloudFront em `us-east-1` (tiers baratos) |
-| **Componentes** | Network, CacheManaged, BffRuntime, FrontendCdn |
-| **Pasta** | `market-dashboard/infra/` |
-| **Deploy** | Publica U1 (BFF) e U2 (estático) na AWS |
-| **Checklist interno** | US-INF-01 → US-INF-04 |
-| **Estágios Construction** | Design Funcional SKIP; NFR EXECUTE (custo/sizing); Infra Design EXECUTE; Code Gen EXECUTE |
-
-### Critério de pronto da unidade
-- `terraform plan` revisado antes de `apply`
-- Outputs: DNS ALB, URL CDN
-- Lembrete de `terraform destroy` ao fim do estudo
-
----
-
-## Sequência de construção
-1. Completar **U1**  
-2. Completar **U2**  
-3. Completar **U3**  
-4. Build e Testes consolidados  
-
-**Paralelismo**: nenhum (sequência estrita).
+## Sequência
+U1 → U2 → U3 → U4 → U5 → (U6 opcional).  
+Dentro de cada unidade: histórias na ordem numérica.

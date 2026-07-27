@@ -1,75 +1,46 @@
-# Métodos dos Componentes (alto nível)
+# Métodos (alto nível) — revisão
 
-> Regras de cálculo detalhadas ficam para o Design Funcional (U1). Aqui: assinaturas tipadas.
-
-## MarketDataSource (`coingecko.py`)
-
+## CoinGeckoClient
 ```python
-async def fetch_simple_price(coin_ids: list[str], vs_currency: str) -> dict[str, float]: ...
-async def fetch_market_chart(coin_id: str, vs_currency: str, days: int) -> list[tuple[int, float]]: ...
+def get_market_data(coin_id: str) -> dict  # {preco, variacao_24h}
 ```
 
-- Retornos estruturados; erros de rede/formato → exceções tipadas do domínio de integração.
-
-## CacheStore (`cache.py`)
-
+## CacheStore
 ```python
-def get(key: str) -> bytes | None: ...
-def set(key: str, value: bytes, ttl_seconds: int) -> None: ...
-def delete(key: str) -> None: ...
+def get(chave: str) -> dict | None
+def set(chave: str, valor: dict, ttl: int) -> None
+def ping() -> bool
+def append_preco(serie_key: str, preco: float, ts: float, max_n: int) -> None
+def get_ultimos_precos(serie_key: str, n: int) -> list[float]
 ```
 
-## IndicatorsEngine (`indicators.py`)
-
+## IndicatorsEngine
 ```python
-def percent_change_24h(price_now: float, price_24h_ago: float) -> float: ...
-def sma(prices: list[float], window: int) -> float: ...
-def volatility_pct(prices: list[float], window: int) -> float: ...
+def media_movel(precos: list[float]) -> float | None
+def volatilidade(precos: list[float]) -> float | None  # documentar fórmula na H10
 ```
 
-## MarketIndicatorsService (`market_indicators.py`)
-
+## Pipeline
 ```python
-async def get_indicators() -> IndicatorsResponse: ...
+def processar_moeda(coin_id: str) -> dict  # contrato dashboard de uma moeda
 ```
 
-- Orquestra CacheStore + MarketDataSource + IndicatorsEngine.
-- `IndicatorsResponse` inclui lista por moeda e sinais de degradação.
-
-## ApiRoutes (`main.py`)
-
+## ApiRoutes
 ```python
-@app.get("/api/indicators")
-async def get_indicators() -> IndicatorsResponse: ...
+@app.get("/api/dashboard")
+def dashboard(refresh: bool = False) -> list[dict] | dict  # dict até H10; list a partir H11
 ```
 
-- Delega a `MarketIndicatorsService`; mapeia falhas sem cache → HTTP 502/503.
-
-## AppConfig (`config.py`)
-
+## Celery
 ```python
-# propriedades tipadas / settings
-COINS: list[str]
-PRICE_TTL_SECONDS: int
-HISTORY_TTL_SECONDS: int
-SMA_WINDOW: int
-VOLATILITY_WINDOW: int
-COINGECKO_BASE_URL: str
-VALKEY_HOST: str
-VALKEY_PORT: int
+@app.task
+def processar_moeda_task(coin_id: str) -> dict
+# beat: schedule periódico por moeda da config
 ```
 
-## MarketApiService (Angular)
-
+## Frontend
 ```typescript
-getIndicators(): Observable<IndicatorsResponse>;
+// DashboardService
+getDashboard(): Observable<DashboardItem | DashboardItem[]>
+// CardMoeda @Input() dados
 ```
-
-## DashboardComponent (Angular)
-
-```typescript
-ngOnInit(): void;
-refresh(): void; // botão atualizar
-```
-
-- Exibe banner se `degraded` global; badge/ícone por linha se o item estiver degradado.

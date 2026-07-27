@@ -1,66 +1,27 @@
-# Componentes — market-dashboard
+# Componentes — market-dashboard (revisão)
 
-## Camada BFF (Python / FastAPI)
+## Backend
+| Componente | Arquivo | Responsabilidade |
+|---|---|---|
+| ApiRoutes | `main.py` | `GET /api/dashboard`, CORS, header X-Cache, orquestra HIT/MISS chamando pipeline |
+| AppConfig | `config.py` | TTL, moedas, URLs, Valkey/broker, N da série, intervalo beat |
+| CoinGeckoClient | `services/coingecko.py` | `get_market_data` — só fonte externa |
+| CacheStore | `services/cache.py` | get/set/ping/série — sem negócio |
+| IndicatorsEngine | `services/indicators.py` | `media_movel`, `volatilidade` — puro |
+| Pipeline | `services/pipeline.py` | Único caminho coleta→série→cálculo→cache (rota MISS e Celery) |
+| CeleryApp | `celery_app.py` | Broker/backend = Valkey |
+| CeleryTasks | `tasks.py` | Task que chama `pipeline.processar_moeda` |
+| BeatSchedule | config Celery Beat | Agenda periódica (1 beat) |
 
-### MarketDataSource
-- **Propósito**: Isolar a fonte externa CoinGecko
-- **Responsabilidades**: Buscar preço e série histórica; tratar timeout/erro HTTP/formato; não calcular indicadores; não acessar Valkey
-- **Arquivo alvo**: `backend/services/coingecko.py`
+## Frontend
+| Componente | Responsabilidade |
+|---|---|
+| CardMoeda | Exibe campos via `@Input`; "—" para null |
+| Dashboard (pai) | Lista cards; estado de erro |
+| DashboardService | HttpClient → `/api/dashboard`; URL via environment |
 
-### CacheStore
-- **Propósito**: Wrapper Valkey (redis-py)
-- **Responsabilidades**: get/set/delete com TTL; chaves por moeda/endpoint; sem regra de negócio nem cálculo
-- **Arquivo alvo**: `backend/services/cache.py`
+## Infra lógica
+Network · EcrRepo · CacheManaged · EcsBff · EcsWorker · EcsBeat · Alb · FrontendCdn · CiCd (H20)
 
-### IndicatorsEngine
-- **Propósito**: Cálculos puros de indicadores
-- **Responsabilidades**: variação % 24h, SMA(7), volatilidade (janela 7); parâmetros via config; sem I/O de rede/cache
-- **Arquivo alvo**: `backend/services/indicators.py`
-
-### MarketIndicatorsService
-- **Propósito**: Application Service — orquestra cache → fonte → indicadores
-- **Responsabilidades**: decidir hit/miss/stale; montar payload agregado; definir flag `degraded`; mapear falhas para erros de aplicação
-- **Arquivo alvo**: `backend/services/market_indicators.py` *(adição ao scaffold original, aprovada no design)*
-
-### ApiRoutes
-- **Propósito**: Camada HTTP fina
-- **Responsabilidades**: expor `GET /api/indicators`; converter erros em 502/503; sem orquestração de negócio
-- **Arquivo alvo**: `backend/main.py`
-
-### AppConfig
-- **Propósito**: Configuração
-- **Responsabilidades**: moedas, TTLs, URLs, host Valkey via env
-- **Arquivo alvo**: `backend/config.py`
-
----
-
-## Camada Frontend (Angular)
-
-### MarketApiService
-- **Propósito**: Cliente HTTP do BFF
-- **Responsabilidades**: chamar `GET /api/indicators` via HttpClient + URL de environment; sem cálculos
-- **Arquivo alvo**: `frontend/src/app/...` (serviço)
-
-### DashboardComponent
-- **Propósito**: UI única do painel
-- **Responsabilidades**: tabela (moeda, preço, var%, SMA, volatilidade), botão atualizar, banner global de degradação + marca por linha
-- **Arquivo alvo**: componente standalone Angular
-
----
-
-## Camada Deploy lógico (AWS)
-
-### Network
-- VPC/subnets base para os demais recursos
-
-### CacheManaged
-- ElastiCache for Valkey consumido pelo BFF
-
-### BffRuntime
-- ECR + ECS Fargate + ALB servindo o BFF
-
-### FrontendCdn
-- S3 + CloudFront servindo o build Angular
-
-### LocalStackRuntime (Compose)
-- Não é AWS; sobe Valkey + backend + frontend para estudo local
+## Local
+Compose: `valkey` + `backend` + `worker` + `beat` (FE via `ng serve` nas fases locais)

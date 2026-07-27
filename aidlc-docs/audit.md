@@ -239,3 +239,27 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Fim Inception → início Construction U1 Functional Design
 
 ---
+
+## REVISÃO DO INCEPTION — Fonte 20 histórias
+**Timestamp**: 2026-07-27T01:48:00Z
+**User Input**: "@c:\Users\cloud\Downloads\prompts-ai-dlc-dashboard-mercado (1).md revise essas historias e refaça o inception!"
+**AI Response**: Inception refeito a partir da fonte normativa (20 histórias, Celery, pipeline.py, GET /api/dashboard, CardMoeda, Compose valkey+backend+worker+beat, 6 unidades/fases). Cópia em prompts-fonte-normativa.md. Artefatos v1 invalidados. Construction resetada. GATE: aprovação do Inception revisado antes de iniciar H01.
+**Context**: Inception v2 supersede v1
+
+---
+
+## Inception v2 — Prompt de Aprovação
+**Timestamp**: 2026-07-27T01:49:00Z
+**User Input**: "(prompt apresentado)"
+**AI Response**: Solicitada aprovação do Inception revisado (requirements, 20 stories, design, units U1-U6). Próximo após OK: Construction história H01.
+**Context**: GATE aprovação Inception v2
+
+---
+
+## Inception v2 — Aprovação
+**Timestamp**: 2026-07-27T01:50:00Z
+**User Input**: "Aprovar Inception v2"
+**AI Response**: Inception v2 marcado COMPLETO. Construction iniciada na H01. Apresentado plano curto da H01; aguardando OK antes de escrever código.
+**Context**: Fim Inception → Construction H01 GATE plano
+
+---

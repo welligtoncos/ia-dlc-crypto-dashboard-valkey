@@ -1,33 +1,17 @@
-# Serviços e Orquestração
+# Serviços e orquestração — revisão
 
-## Serviços de aplicação
+## Caminho reativo (cache-aside)
+1. Rota lê cache (`dashboard:{coin}:indicadores`)
+2. HIT → retorna + `X-Cache: HIT`
+3. MISS → `pipeline.processar_moeda` → grava cache/série → `X-Cache: MISS`
+4. CoinGecko falha → 502 (ou degradação parcial multi-moeda na H11)
 
-### MarketIndicatorsService (orquestrador)
-**Padrão**: Application Service no BFF.
+## Caminho proativo (H13)
+- Beat agenda tasks → worker executa `pipeline.processar_moeda` → cache quente → rota majoritariamente HIT
 
-Fluxo lógico de `get_indicators()`:
-1. Para cada moeda configurada (BTC, ETH, SOL), tentar ler cache de payload/séries relevantes.
-2. Em miss: chamar `MarketDataSource` (CoinGecko).
-3. Calcular indicadores via `IndicatorsEngine`.
-4. Persistir no `CacheStore` com TTLs de config.
-5. Se fonte falhar e houver stale: retornar dados com `degraded=true` (global e/ou por moeda).
-6. Se fonte falhar sem cache: erro de aplicação → rotas respondem 502/503.
+## Regra de ouro
+**Uma** implementação do caminho coleta→série→cálculo→cache: `pipeline.py`.  
+Rota MISS e task Celery apenas chamam.
 
-### MarketApiService (frontend)
-**Padrão**: Gateway HTTP fino.
-- Única dependência de rede do Angular: BFF.
-- Propaga erro HTTP para o `DashboardComponent`.
-
-## Serviços de infraestrutura (lógicos)
-| Serviço lógico | Papel |
-|---|---|
-| Network | Isolamento de rede |
-| CacheManaged | Valkey gerenciado |
-| BffRuntime | Execução do container BFF + entrada ALB |
-| FrontendCdn | Distribuição estática |
-| LocalStackRuntime | Compose local (Valkey+BFF+FE) |
-
-## Princípios de orquestração
-- Rotas HTTP **não** orquestram cache/fonte/cálculo.
-- `CacheStore` e `IndicatorsEngine` **não** se chamam mutuamente.
-- Frontend **nunca** chama CoinGecko.
+## Frontend
+Só consome BFF; sem CoinGecko; sem cálculos.

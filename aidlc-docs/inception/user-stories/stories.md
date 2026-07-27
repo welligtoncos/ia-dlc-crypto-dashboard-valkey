@@ -1,239 +1,248 @@
-# Histórias de Usuário — market-dashboard
+# Histórias de Usuário — 20 (fonte normativa)
 
-**Persona**: Visitante do Painel (única)  
-**Organização**: 3 épicos (BFF → Frontend → Infra), histórias pequenas  
-**Formato**: “Como…, quero…, para…” + critérios Given/When/Then  
-**Enablers técnicos**: Visitante como beneficiário  
+Fonte: `prompts-fonte-normativa.md`.  
+Ordem = ordem de implementação. **Uma história por vez.**
 
 ---
 
-## Épico E1 — BFF + ambiente local
+# Fase 1 — Esqueleto funcional (sem cache)
 
-### US-BFF-01 — Stack local containerizada
-**Como** Visitante do Painel,  
-**quero** que a stack local (Valkey, backend e frontend) suba de forma reproduzível via Docker Compose,  
-**para** que o painel e a API estejam disponíveis para consulta em ambiente de estudo.
+## H01 — App Angular com card vazio
+**Como** usuário, **quero** abrir o Angular e ver a estrutura do painel (sem dados reais), **para** ter a base do frontend.
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+**Tarefa:** `frontend/` Angular standalone; `CardMoeda` (título, preço, variação, média móvel, volatilidade = "—"); card Bitcoin de exemplo; API URL em `environment`.
 
-**Critérios de aceite**
-1. **Dado** o repositório com `docker-compose.yml`, **quando** executo `docker compose up`, **então** sobem os serviços Valkey, backend e frontend sem segredos hardcoded.
-2. **Dado** a stack no ar, **quando** verifico a saúde dos serviços, **então** o backend responde e o frontend fica acessível na porta configurada.
-3. **Dado** a necessidade de derrubar o ambiente, **quando** executo `docker compose down`, **então** os containers são encerrados de forma limpa.
+**Aceite:** `ng serve` mostra card com "—"; dados via `@Input` do pai; URL não hardcoded.
+
+**Fora:** HTTP, cálculos.
 
 ---
 
-### US-BFF-02 — Configuração do BFF
-**Como** Visitante do Painel,  
-**quero** que TTLs, moedas, URLs e host do Valkey venham de configuração/ambiente,  
-**para** que o painel funcione em local e AWS sem valores sensíveis no código.
+## H02 — Endpoint /api/dashboard mock + service Angular
+**Como** sistema, **quero** `GET /api/dashboard` mock e um service Angular, **para** FE e BFF conversarem.
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+**Tarefa:** FastAPI mock JSON (`moeda`, `preco`, `variacao_24h`, `media_movel`, `volatilidade`, `atualizado_em`); CORS; `DashboardService` + render no card; contrato documentado.
 
-**Critérios de aceite**
-1. **Dado** variáveis de ambiente (ou defaults seguros em `config.py`), **quando** o BFF inicia, **então** carrega TTL de preços/histórico, lista BTC/ETH/SOL, URL CoinGecko e host Valkey.
-2. **Dado** o código-fonte, **quando** inspeciono o repositório, **então** não há segredos hardcoded.
-3. **Dado** a ausência de uma variável obrigatória crítica, **quando** o BFF sobe, **então** falha com mensagem clara (ou usa default documentado, se aplicável).
+**Aceite:** mock no browser/curl; card com valores do endpoint; interface TS alinhada.
+
+**Fora:** CoinGecko, Valkey, Celery, cálculo real.
 
 ---
 
-### US-BFF-03 — Cliente CoinGecko
-**Como** Visitante do Painel,  
-**quero** que o BFF obtenha dados de preço/histórico da CoinGecko de forma isolada,  
-**para** que falhas da fonte externa não quebrem o restante da aplicação de forma opaca.
+## H03 — Integração CoinGecko
+**Como** sistema, **quero** buscar preço atual na CoinGecko, **para** validar a fonte externa.
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+**Tarefa:** `services/coingecko.py` → `get_market_data(coin_id)` com preço e variação 24h; timeout/HTTP tratados.
 
-**Critérios de aceite**
-1. **Dado** a CoinGecko disponível, **quando** o cliente solicita preço ou série para BTC/ETH/SOL, **então** retorna dados tipados/estruturados para o restante do BFF.
-2. **Dado** timeout ou erro HTTP da CoinGecko, **quando** a chamada falha, **então** o cliente propaga erro tratável (sem engolir silenciosamente).
-3. **Dado** payload com formato inesperado, **quando** o cliente faz o parse, **então** sinaliza erro de formato sem derrubar o processo inteiro.
+**Aceite:** `get_market_data("bitcoin")` real; falhas logadas sem derrubar app; sem segredos.
+
+**Fora:** ligar à rota; cache; cálculo.
 
 ---
 
-### US-BFF-04 — Wrapper de cache Valkey
-**Como** Visitante do Painel,  
-**quero** que respostas/séries fiquem em cache no Valkey com TTL curto,  
-**para** que consultas seguintes ao painel sejam rápidas e evitem refetch desnecessário.
+## H04 — Fluxo ponta a ponta com dado real
+**Como** usuário, **quero** preço e variação reais no painel, **para** fechar Angular → BFF → CoinGecko.
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+**Tarefa:** ligar CoinGecko à rota; MM/vol ainda null; erro 502 + estado de erro na UI.
 
-**Critérios de aceite**
-1. **Dado** uma chave por moeda/endpoint, **quando** gravo um valor com TTL (ex.: 60s preços, 300s histórico), **então** consigo ler o valor enquanto o TTL for válido.
-2. **Dado** o TTL expirado, **quando** leio a chave, **então** o cache indica ausência (miss).
-3. **Dado** o módulo `cache.py`, **quando** reviso responsabilidades, **então** não há cálculo de indicadores nem regra de negócio — apenas get/set/delete (ou equivalente).
+**Aceite:** dados reais no card; falha CoinGecko → erro amigável.
+
+**Fora:** cache/Valkey (propositadamente lento).
 
 ---
 
-### US-BFF-05 — Cálculo de indicadores
-**Como** Visitante do Painel,  
-**quero** variação % (24h), SMA(7) e volatilidade (janela 7) calculados no BFF,  
-**para** ver indicadores consistentes sem lógica no frontend.
+# Fase 2 — Cache (Valkey local)
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+## H05 — Valkey local + wrapper de cache
+**Como** sistema, **quero** Valkey local e BFF conectado, **para** ter cache no dev.
 
-**Critérios de aceite**
-1. **Dado** uma série de preços diários suficiente, **quando** calculo SMA de 7 períodos, **então** o resultado é a média aritmética dos últimos 7 valores.
-2. **Dado** a mesma série, **quando** calculo volatilidade, **então** obtenho o desvio-padrão percentual dos retornos diários na janela 7 (parâmetros via `config.py`).
-3. **Dado** preço atual e referência 24h, **quando** calculo variação %, **então** o percentual reflete a mudança no período.
-4. **Dado** série insuficiente para a janela, **quando** tento calcular, **então** o serviço sinaliza erro/indisponibilidade do indicador de forma explícita.
-5. **Dado** PBT habilitado, **quando** os testes de propriedades forem criados na construção, **então** funções puras de indicadores serão cobertas por propriedades (invariantes/oráculos conforme design).
+**Tarefa:** Compose Valkey+backend (comentar slots worker/beat p/ H12); `cache.py` get/set/ping JSON; env em `config.py`.
+
+**Aceite:** `docker compose up`; PING ok; wrapper sem negócio.
+
+**Fora:** usar cache na rota; Celery.
 
 ---
 
-### US-BFF-06 — API de indicadores com cache e degradação
-**Como** Visitante do Painel,  
-**quero** um endpoint do BFF que devolva preço, variação %, SMA e volatilidade para BTC/ETH/SOL,  
-**para** que o painel consuma um contrato estável já com cache e fallback.
+## H06 — Cache-aside TTL 60s
+**Como** sistema, **quero** gravar/ler resultado no Valkey (TTL 60s), **para** cache-aside.
 
-**Persona**: Visitante do Painel  
-**Épico**: E1
+**Tarefa:** chave `dashboard:bitcoin:indicadores`; HIT/MISS na rota.
 
-**Critérios de aceite**
-1. **Dado** CoinGecko e Valkey saudáveis (cache miss), **quando** chamo o endpoint de indicadores, **então** recebo os quatro indicadores por moeda e o resultado intermediário/final é cacheado.
-2. **Dado** cache hit válido, **quando** chamo o endpoint novamente dentro do TTL, **então** a resposta vem do Valkey sem refetch desnecessário à CoinGecko.
-3. **Dado** CoinGecko falha/demora/formato inválido e existe cache stale, **quando** chamo o endpoint, **então** recebo os dados em cache com **flag de degradação**.
-4. **Dado** CoinGecko falha e não há cache, **quando** chamo o endpoint, **então** recebo HTTP 502 ou 503 com mensagem clara.
-5. **Dado** o frontend (ou cliente HTTP), **quando** consome a API, **então** não precisa calcular nenhum indicador.
+**Aceite:** 1ª chama CoinGecko; seguintes &lt;60s do cache; TTL em config.
+
+**Fora:** série histórica; MM/vol.
 
 ---
 
-## Épico E2 — Frontend Angular
+## H07 — Observabilidade HIT/MISS
+**Como** desenvolvedor, **quero** ver HIT/MISS, **para** comprovar ganho.
 
-### US-FE-01 — App Angular e environment
-**Como** Visitante do Painel,  
-**quero** um app Angular (standalone) com a URL base da API em environment,  
-**para** abrir o painel apontando ao BFF sem URLs fixas nos componentes.
+**Tarefa:** header `X-Cache`; log latência; opcional `?refresh=true`.
 
-**Persona**: Visitante do Painel  
-**Épico**: E2
+**Aceite:** header correto; HIT mais rápido; refresh força MISS se implementado.
 
-**Critérios de aceite**
-1. **Dado** o projeto Angular v17+ com standalone components, **quando** inicio a aplicação, **então** ela sobe sem erros de bootstrap.
-2. **Dado** o arquivo de environment, **quando** o app lê a configuração, **então** obtém a URL base da API.
-3. **Dado** um componente de UI, **quando** inspeciono o código, **então** não há URL da API hardcoded.
+**Fora:** Prometheus.
 
 ---
 
-### US-FE-02 — Serviço HttpClient do BFF
-**Como** Visitante do Painel,  
-**quero** um serviço Angular que busque os indicadores no BFF via HttpClient,  
-**para** a interface obter dados prontos sem regras de negócio no cliente.
+# Fase 3 — Série e cálculos
 
-**Persona**: Visitante do Painel  
-**Épico**: E2
+## H08 — Série temporal de preços
+**Como** sistema, **quero** acumular preços no Valkey, **para** alimentar indicadores.
 
-**Critérios de aceite**
-1. **Dado** o BFF disponível, **quando** o serviço solicita indicadores, **então** retorna o payload tipado/estruturado para a UI.
-2. **Dado** erro HTTP do BFF (ex.: 502/503), **quando** o serviço trata a resposta, **então** propaga/estado de erro consumível pela UI (sem calcular indicadores).
-3. **Dado** o código do serviço, **quando** reviso responsabilidades, **então** não há SMA, volatilidade nem variação calculadas no frontend.
+**Tarefa:** no MISS gravar em `serie:bitcoin:precos` (sorted set ou list); limitar N; ler últimos N ordenados via `cache.py`.
+
+**Aceite:** cada MISS adiciona ponto; máx N; leitura ordenada.
+
+**Fora:** calcular indicadores.
 
 ---
 
-### US-FE-03 — Tabela de indicadores e atualizar
-**Como** Visitante do Painel,  
-**quero** uma tabela com moeda, preço, variação %, SMA e volatilidade e um botão atualizar,  
-**para** consultar e refrescar os indicadores sob demanda.
+## H09 — Média móvel
+**Como** usuário, **quero** média móvel dos últimos N preços, **para** ver tendência.
 
-**Persona**: Visitante do Painel  
-**Épico**: E2
+**Tarefa:** `indicators.media_movel`; integrar no MISS; card exibe.
 
-**Critérios de aceite**
-1. **Dado** o BFF retornando dados de BTC/ETH/SOL, **quando** abro o painel, **então** vejo uma linha (ou equivalente) por moeda com os quatro indicadores.
-2. **Dado** a tabela visível, **quando** clico em atualizar, **então** uma nova chamada ao BFF atualiza os valores exibidos.
-3. **Dado** resposta com flag de degradação, **quando** a UI renderiza, **então** mostro um aviso visível de que os dados podem estar desatualizados/degradados.
-4. **Dado** erro sem dados, **quando** a UI renderiza, **então** mostro mensagem de erro clara (sem inventar números).
+**Aceite:** `media_movel([100,102,101,103,104]) == 102`; poucos pontos → null / "—"; só em `indicators.py`.
+
+**Fora:** volatilidade; gráfico.
 
 ---
 
-## Épico E3 — Infraestrutura AWS (Terraform)
+## H10 — Volatilidade
+**Como** usuário, **quero** volatilidade no painel, **para** ver oscilação.
 
-### US-INF-01 — Rede VPC
-**Como** Visitante do Painel,  
-**quero** que a base de rede AWS (VPC e subnets) exista via Terraform com tiers baratos,  
-**para** que os serviços do painel tenham onde rodar em `us-east-1`.
+**Tarefa:** `indicators.volatilidade`; documentar populacional/amostral e preços vs retornos; card completo.
 
-**Persona**: Visitante do Painel  
-**Épico**: E3
+**Aceite:** resultado correto em lista conhecida; poucos pontos → null.
 
-**Critérios de aceite**
-1. **Dado** variáveis de região/tamanho, **quando** aplico o módulo de rede, **então** a VPC e subnets necessárias são criadas em `us-east-1` (ou região variável).
-2. **Dado** o código Terraform, **quando** reviso recursos, **então** não há dimensionamento “gigante” — apenas o mínimo de estudo.
-3. **Dado** `terraform plan`, **quando** analiso a saída esperada, **então** vejo criação dos recursos de rede previstos (antes de qualquer `apply`).
+**Fora:** RSI/bandas.
 
 ---
 
-### US-INF-02 — ElastiCache for Valkey
-**Como** Visitante do Painel,  
-**quero** um Valkey gerenciado (ElastiCache) provisionado via Terraform,  
-**para** que o BFF em AWS use o mesmo padrão de cache do ambiente local.
+# Fase 4 — Amadurecimento
 
-**Persona**: Visitante do Painel  
-**Épico**: E3
+## H11 — Múltiplas moedas
+**Como** usuário, **quero** várias moedas, **para** um painel de verdade.
 
-**Critérios de aceite**
-1. **Dado** a VPC existente, **quando** aplico o recurso ElastiCache Valkey (tier barato), **então** o endpoint fica disponível para o BFF.
-2. **Dado** outputs Terraform, **quando** consulto a saída, **então** obtenho informações úteis de conexão (sem expor segredos no código).
-3. **Dado** o fim do estudo, **quando** executo `terraform destroy`, **então** o recurso pode ser destruído com o restante da stack.
+**Tarefa:** lista em `config.py`; cache/série por moeda; `/api/dashboard` lista; `*ngFor` de cards.
+
+**Aceite:** nova moeda só na config; chaves distintas; falha de uma não derruba outras.
+
+**Fora:** filtro/ordenação UI.
 
 ---
 
-### US-INF-03 — ECR, ECS Fargate e ALB
-**Como** Visitante do Painel,  
-**quero** o BFF publicado em ECS Fargate atrás de um ALB (imagem no ECR),  
-**para** acessar a API de indicadores pela internet de forma mínima e barata.
+## H12 — Celery + pipeline
+**Como** sistema, **quero** worker Celery e pipeline único, **para** processamento assíncrono.
 
-**Persona**: Visitante do Painel  
-**Épico**: E3
+**Tarefa:** `pipeline.processar_moeda`; `celery_app.py`; `tasks.py`; serviço worker no Compose; rota MISS chama pipeline.
 
-**Critérios de aceite**
-1. **Dado** Dockerfile do backend, **quando** a imagem é publicada no ECR e o serviço ECS sobe, **então** o ALB encaminha tráfego ao BFF.
-2. **Dado** outputs Terraform, **quando** consulto a saída, **então** obtenho o DNS do ALB.
-3. **Dado** `terraform plan` da unidade, **quando** reviso, **então** vejo ECR/ECS/ALB nos tamanhos mínimos configuráveis por variáveis.
-4. **Dado** o fim do estudo, **quando** uso `terraform destroy`, **então** esses recursos entram no ciclo de destruição.
+**Aceite:** Compose sobe valkey+backend+worker; task manual grava no Valkey; sem lógica duplicada.
+
+**Fora:** beat/agendamento.
 
 ---
 
-### US-INF-04 — Frontend estático em S3 e CloudFront
-**Como** Visitante do Painel,  
-**quero** o frontend Angular servido via S3 + CloudFront,  
-**para** abrir o painel pela URL do CDN.
+## H13 — Celery Beat (batch)
+**Como** sistema, **quero** pré-cálculo periódico, **para** batch além do sob demanda.
 
-**Persona**: Visitante do Painel  
-**Épico**: E3
+**Tarefa:** beat + schedule; serviço beat no Compose; README reativo vs proativo; respeitar rate limit CoinGecko.
 
-**Critérios de aceite**
-1. **Dado** o build do Angular, **quando** o bucket S3 e a distribuição CloudFront são provisionados, **então** o painel fica acessível pela URL do CDN.
-2. **Dado** outputs Terraform, **quando** consulto a saída, **então** obtenho a URL do CDN.
-3. **Dado** a configuração do frontend em AWS, **quando** o app chama a API, **então** usa a URL do BFF/ALB via environment de produção (sem hardcode no componente).
-4. **Dado** o fim do estudo, **quando** executo `terraform destroy`, **então** S3/CloudFront podem ser destruídos com a stack.
+**Aceite:** atualização sozinha; dashboard majoritariamente HIT; um único beat; sob demanda como fallback.
+
+**Fora:** filas avançadas/retries sofisticados.
 
 ---
 
-## Mapeamento Persona ↔ Histórias
+# Fase 5 — AWS Terraform
 
-| Persona | Histórias |
-|---|---|
-| Visitante do Painel | Todas (US-BFF-01…06, US-FE-01…03, US-INF-01…04) |
+## H14 — Terraform + VPC
+**Como** operador, **quero** fundação Terraform e VPC, **para** hospedar recursos.
 
-## Ordem de implementação sugerida
-1. US-BFF-01 → US-BFF-02 → US-BFF-03 → US-BFF-04 → US-BFF-05 → US-BFF-06  
-2. US-FE-01 → US-FE-02 → US-FE-03  
-3. US-INF-01 → US-INF-02 → US-INF-03 → US-INF-04  
+**Tarefa:** main/variables/outputs; network 2 AZs; Fargate público sem NAT (documentar); state S3+Dynamo ou local comentado.
 
-## Cobertura de requisitos (referência)
-| Requisito | Histórias |
-|---|---|
-| RF-01, RF-02 | US-BFF-05, US-BFF-06, US-FE-03 |
-| RF-03 | US-BFF-04, US-BFF-06 |
-| RF-04 | US-BFF-03, US-BFF-06, US-FE-03 |
-| RF-05 | US-FE-01…03 |
-| RF-06 | US-BFF-01 |
-| RF-07 | Ordem dos épicos |
-| RF-08 | US-INF-01…04 |
-| RNF-03 (PBT) | US-BFF-05 (na construção) |
+**Aceite:** init/plan ok; VPC/subnets/IGW no plan; região/CIDRs variáveis.
+
+**Fora:** ECS/ElastiCache/S3.
+
+---
+
+## H15 — ECR + push imagem
+**Como** operador, **quero** ECR e imagem do backend, **para** Fargate (BFF/worker/beat mesma imagem).
+
+**Tarefa:** Dockerfile multi-comando; `ecr.tf`; docs build/login/push; output URL.
+
+**Aceite:** apply cria repo; imagem publicada; output URL.
+
+**Fora:** CI/CD (H20).
+
+---
+
+## H16 — ElastiCache Valkey
+**Como** operador, **quero** Valkey gerenciado, **para** cache/série/broker em prod.
+
+**Tarefa:** `elasticache.tf` t4g.micro nó único; subnet privada; SG fechado; output endpoint.
+
+**Aceite:** apply cria cluster; endpoint output; sem ingress público.
+
+**Fora:** réplicas/cluster mode.
+
+---
+
+## H17 — ECS Fargate BFF + worker + beat
+**Como** operador, **quero** três serviços Fargate, **para** API e tarefas.
+
+**Tarefa:** cluster; BFF+ALB; worker; beat desired_count=1; env Valkey; logs CW; output DNS ALB.
+
+**Aceite:** `/api/dashboard` via ALB; beat=1; worker/beat no mesmo Valkey.
+
+**Fora:** HTTPS/ACM/autoscaling.
+
+---
+
+## H18 — Angular S3 + CloudFront
+**Como** operador, **quero** FE estático no CDN, **para** servir barato.
+
+**Tarefa:** S3 privado + CloudFront OAC + SPA fallback; docs sync/invalidate; output URL.
+
+**Aceite:** apply; app na URL CF; bucket não público.
+
+**Fora:** domínio custom.
+
+---
+
+## H19 — Amarração rede/segredos/URL
+**Como** operador, **quero** ligar as peças com segurança, **para** fim a fim na AWS.
+
+**Tarefa:** SG ElastiCache ← SG tasks; env/SSM; Angular prod → ALB; CORS CloudFront; outputs revisados.
+
+**Aceite:** HIT/MISS + beat em prod; CORS ok; sem segredo em texto plano.
+
+**Fora:** WAF/HTTPS custom.
+
+---
+
+# Fase 6 — CI/CD (opcional)
+
+## H20 — Pipeline CI/CD
+**Como** desenvolvedor, **quero** push publicando FE e BE, **para** parar deploy manual.
+
+**Tarefa:** GitHub Actions: backend→ECR+ECS (BFF/worker/beat); frontend→S3+invalidate; OIDC preferível.
+
+**Aceite:** push main dispara; 3 serviços atualizados; FE novo no CF.
+
+**Fora:** staging/aprovações manuais.
+
+---
+
+## Resumo
+| Fase | Histórias | Unidade |
+|---|---|---|
+| 1 Esqueleto | H01–H04 | U1 |
+| 2 Cache | H05–H07 | U2 |
+| 3 Série/cálculos | H08–H10 | U3 |
+| 4 Amadurecimento | H11–H13 | U4 |
+| 5 AWS | H14–H19 | U5 |
+| 6 CI/CD | H20 | U6 (opcional) |
