@@ -1,39 +1,147 @@
 .card-moeda {
-  max-width: 22rem;
-  padding: 1.25rem 1.5rem;
-  border: 1px solid #d0d7de;
-  border-radius: 8px;
-  background: #fff;
-  font-family: Georgia, 'Times New Roman', serif;
+  width: 100%;
+  max-width: none;
+  min-height: 16.5rem;
+  padding: 1.1rem 1.2rem 0.95rem;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  background: #fffcfa;
+  font-family: 'Iowan Old Style', Palatino, Georgia, serif;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 0 rgba(28, 25, 23, 0.04);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.card-moeda--aguardando {
+  border-style: dashed;
+  background: #fafaf9;
+}
+
+.card-moeda--na-fila {
+  border-color: #e11d48;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.15);
+}
+
+.card-moeda--processando {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18);
+  background: #f0fdf4;
+}
+
+.card-moeda--atualizado {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+  background: #eff6ff;
+}
+
+.card-moeda__topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+  min-height: 1.75rem;
 }
 
 .card-moeda__titulo {
-  margin: 0 0 1rem;
-  font-size: 1.35rem;
+  margin: 0;
+  font-size: 1.25rem;
   text-transform: capitalize;
+  color: #1c1917;
+}
+
+.card-moeda__pill {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #57534e;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  white-space: nowrap;
+}
+
+.card-moeda--aguardando .card-moeda__pill { color: #78716c; }
+.card-moeda--na-fila .card-moeda__pill {
+  color: #9f1239;
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+.card-moeda--processando .card-moeda__pill {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+.card-moeda--atualizado .card-moeda__pill {
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-color: #bfdbfe;
 }
 
 .card-moeda__campos {
   margin: 0;
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
+  flex: 1;
 }
 
 .card-moeda__campos div {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 1rem;
-  border-bottom: 1px solid #eaeef2;
-  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #f5f5f4;
+  padding-bottom: 0.3rem;
+  min-height: 1.45rem;
 }
 
 .card-moeda__campos dt {
   margin: 0;
-  color: #57606a;
-  font-size: 0.9rem;
+  color: #78716c;
+  font-size: 0.86rem;
 }
 
 .card-moeda__campos dd {
   margin: 0;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9rem;
+  color: #1c1917;
+  text-align: right;
+  min-width: 5.5rem;
 }
+
+.card-moeda__var--up { color: #15803d; }
+.card-moeda__var--down { color: #be123c; }
+
+.card-moeda__skeleton {
+  display: inline-block;
+  width: 4.5rem;
+  height: 0.85rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e7e5e4 0%, #fafaf9 50%, #e7e5e4 100%);
+  background-size: 200% 100%;
+  animation: card-shimmer 1.2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes card-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.card-moeda__rodape {
+  margin-top: 0.75rem;
+  min-height: 2rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  color: #a8a29e;
+}
+
+.card-moeda__rodape time { color: #78716c; }

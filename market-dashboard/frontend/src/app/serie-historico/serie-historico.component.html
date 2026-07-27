@@ -1,0 +1,64 @@
+@if (serie) {
+  <article class="serie">
+    <header class="serie__header">
+      <h3 class="serie__titulo">{{ serie.moeda }}</h3>
+      <p class="serie__meta" [title]="serie.chave">
+        {{ serie.total }} pts · janela SMA {{ serie.janela_sma }}
+      </p>
+    </header>
+
+    @if (serie.pontos.length < 2) {
+      <p class="serie__vazio">
+        Ainda há poucos pontos na série. Aguarde o Beat/Worker gravar mais preços no Valkey.
+      </p>
+    } @else {
+      <svg
+        class="serie__chart"
+        viewBox="0 0 200 56"
+        role="img"
+        [attr.aria-label]="'Histórico de preço e média móvel de ' + serie.moeda"
+      >
+        @if (polylinePreco) {
+          <polyline class="serie__line serie__line--preco" [attr.points]="polylinePreco" />
+        }
+        @if (polylineMm) {
+          <polyline class="serie__line serie__line--mm" [attr.points]="polylineMm" />
+        }
+      </svg>
+      <p class="serie__legenda">
+        <span class="serie__swatch serie__swatch--preco"></span> preço
+        <span class="serie__swatch serie__swatch--mm"></span> média móvel (janela {{ serie.janela_sma }})
+      </p>
+
+      <div class="serie__table-wrap">
+        <table class="serie__table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Preço</th>
+              <th>MM</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of tabela; track p.ts) {
+              <tr>
+                <td>{{ p.ts | date: 'HH:mm:ss' }}</td>
+                <td>{{ p.preco | number: '1.2-2' }}</td>
+                <td>
+                  @if (p.media_movel !== null) {
+                    {{ p.media_movel | number: '1.2-2' }}
+                  } @else {
+                    —
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="serie__hint">
+        A MM do card usa os últimos {{ serie.janela_sma }} preços desta série (calculada no BFF).
+      </p>
+    }
+  </article>
+}

@@ -95,21 +95,35 @@ def append_preco(
         client.zremrangebyrank(key, 0, excess - 1)
 
 
-def get_ultimos_precos(coin_id: str, n: int) -> list[float]:
+def get_ultimos_pontos(coin_id: str, n: int) -> list[dict[str, Any]]:
     """
-    Retorna os últimos n preços em ordem cronológica (mais antigo → mais recente).
+    Últimos n pontos da série em ordem cronológica (mais antigo → mais recente).
+    Cada item: {ts_unix, ts (ISO UTC), preco}.
     """
     if n < 1:
         return []
 
     key = serie_key(coin_id)
-    # ZRANGE com start negativo: últimos n members ordenados por score asc
     members = _get_client().zrange(key, -n, -1)
-    precos: list[float] = []
+    pontos: list[dict[str, Any]] = []
     for member in members:
-        # member = "{ts}:{preco}" — preço é o trecho após o primeiro ':'
         try:
-            precos.append(float(member.split(":", 1)[1]))
+            ts_raw, preco_raw = member.split(":", 1)
+            ts_unix = float(ts_raw)
+            pontos.append(
+                {
+                    "ts_unix": ts_unix,
+                    "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts_unix)),
+                    "preco": float(preco_raw),
+                }
+            )
         except (IndexError, ValueError):
             logger.warning("membro de série inválido: %s", member)
-    return precos
+    return pontos
+
+
+def get_ultimos_precos(coin_id: str, n: int) -> list[float]:
+    """
+    Retorna os últimos n preços em ordem cronológica (mais antigo → mais recente).
+    """
+    return [float(p["preco"]) for p in get_ultimos_pontos(coin_id, n)]

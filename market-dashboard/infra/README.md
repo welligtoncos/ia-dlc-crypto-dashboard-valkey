@@ -182,23 +182,25 @@ Abra a URL do CloudFront — a shell do Angular deve carregar (dados da API na H
 - Valkey: ingress apenas do SG das tasks (H17).
 - Sem segredos em texto no código; endpoint Valkey só via env da task.
 
-Após mudar o BFF:
+Após mudar o backend (BFF / worker / beat usam a **mesma** imagem):
 
 ```powershell
-# 1) terraform (CloudFront behaviors + env CORS)
+# 1) terraform (CloudFront behaviors + env CORS) — se mudou infra
 cd market-dashboard\infra
 terraform apply
 
-# 2) nova imagem BFF + force deploy
+# 2) nova imagem + force deploy dos 3 serviços
 $REPO = (terraform output -raw ecr_repository_url)
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ($REPO.Split('/')[0])
 cd ..\backend
 docker build -t market-dashboard-backend:latest .
 docker tag market-dashboard-backend:latest "${REPO}:latest"
 docker push "${REPO}:latest"
-aws ecs update-service --cluster market-dashboard-cluster --service market-dashboard-bff --force-new-deployment --region us-east-1
+foreach ($svc in @("market-dashboard-bff","market-dashboard-worker","market-dashboard-beat")) {
+  aws ecs update-service --cluster market-dashboard-cluster --service $svc --force-new-deployment --region us-east-1
+}
 
-# 3) rebuild FE prod + sync
+# 3) rebuild FE prod + sync (se mudou Angular)
 cd ..\frontend
 npm run build
 $BUCKET = (terraform "-chdir=..\infra" output -raw frontend_bucket_name)
@@ -208,4 +210,7 @@ aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
 
 # 4) teste
 curl.exe -i "https://$(terraform "-chdir=..\infra" output -raw cloudfront_domain_name)/api/dashboard"
+curl.exe -s "https://$(terraform "-chdir=..\infra" output -raw cloudfront_domain_name)/api/observability/events?limit=5"
 ```
+
+Defaults úteis do backend em produção (env da task): `BEAT_INTERVAL_SECONDS=90`, `CACHE_TTL_SECONDS=90`, `COINGECKO_MIN_INTERVAL_SECONDS=2.5`. Beat agenda **uma** task `processar_dashboard_batch` (não 3 tasks paralelas).

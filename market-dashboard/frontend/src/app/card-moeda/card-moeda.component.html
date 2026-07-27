@@ -1,21 +1,65 @@
-<article class="card-moeda">
-  <h2 class="card-moeda__titulo">{{ dados.moeda }}</h2>
+<article
+  class="card-moeda"
+  [class.card-moeda--aguardando]="estado === 'aguardando'"
+  [class.card-moeda--na-fila]="estado === 'na_fila'"
+  [class.card-moeda--processando]="estado === 'processando'"
+  [class.card-moeda--atualizado]="estado === 'atualizado'"
+>
+  <header class="card-moeda__topo">
+    <h2 class="card-moeda__titulo">{{ dados.moeda }}</h2>
+    <span class="card-moeda__pill" aria-live="polite">{{ rotuloEstado }}</span>
+  </header>
+
   <dl class="card-moeda__campos">
     <div>
-      <dt>Preço</dt>
-      <dd>{{ formatar(dados.preco) }}</dd>
+      <dt>Preço (USD)</dt>
+      <dd [class.card-moeda__valor--vazio]="!temDados">
+        @if (temDados) {
+          {{ dados.preco | number: '1.2-2' }}
+        } @else {
+          <span class="card-moeda__skeleton" aria-hidden="true"></span>
+        }
+      </dd>
     </div>
     <div>
       <dt>Variação 24h</dt>
-      <dd>{{ formatar(dados.variacao_24h) }}</dd>
+      <dd [class]="variacaoClass()" [class.card-moeda__valor--vazio]="dados.variacao_24h === null">
+        @if (dados.variacao_24h !== null && dados.variacao_24h !== undefined) {
+          {{ dados.variacao_24h > 0 ? '+' : '' }}{{ dados.variacao_24h | number: '1.2-2' }}%
+        } @else {
+          <span class="card-moeda__skeleton" aria-hidden="true"></span>
+        }
+      </dd>
     </div>
     <div>
       <dt>Média móvel</dt>
-      <dd>{{ formatar(dados.media_movel) }}</dd>
+      <dd [class.card-moeda__valor--vazio]="dados.media_movel === null">
+        @if (dados.media_movel !== null && dados.media_movel !== undefined) {
+          {{ dados.media_movel | number: '1.2-2' }}
+        } @else {
+          <span class="card-moeda__skeleton" aria-hidden="true"></span>
+        }
+      </dd>
     </div>
     <div>
       <dt>Volatilidade</dt>
-      <dd>{{ formatar(dados.volatilidade) }}</dd>
+      <dd [class.card-moeda__valor--vazio]="dados.volatilidade === null">
+        @if (dados.volatilidade !== null && dados.volatilidade !== undefined) {
+          {{ dados.volatilidade | number: '1.4-4' }}
+        } @else {
+          <span class="card-moeda__skeleton" aria-hidden="true"></span>
+        }
+      </dd>
     </div>
   </dl>
+
+  <footer class="card-moeda__rodape">
+    @if (dados.atualizado_em) {
+      <time [attr.datetime]="dados.atualizado_em">
+        Última atualização {{ dados.atualizado_em | date: 'HH:mm:ss' }}
+      </time>
+    } @else {
+      <span>Valores aparecem assim que o BFF responder (cache ou pipeline).</span>
+    }
+  </footer>
 </article>

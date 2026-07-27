@@ -1,18 +1,318 @@
 <main class="painel">
   <header class="painel__header">
-    <h1>Dashboard de Mercado</h1>
-    <p class="painel__hint">Múltiplas moedas via config (H11)</p>
+    <div class="painel__intro">
+      <p class="painel__eyebrow">Observabilidade de mercado · BFF + Valkey + Celery</p>
+      <h1>Dashboard de Mercado</h1>
+      <p class="painel__objetivo">
+        Indicadores de criptomoedas com lógica no BFF: cache Valkey, série temporal e
+        pré-cálculo via Celery. O Angular só apresenta — o fluxo abaixo mostra fila,
+        cache e cálculos em tempo quase real.
+      </p>
+    </div>
+    <aside class="painel__resumo" aria-label="Status da sessão">
+      @if (sincronizando) {
+        <span class="indicadores__badge indicadores__badge--sync">Sincronizando</span>
+      } @else if (carregando) {
+        <span class="indicadores__badge">Carregando</span>
+      } @else {
+        <span class="indicadores__badge indicadores__badge--ok">Estável</span>
+      }
+      @if (ultimaSyncEm) {
+        <time class="indicadores__sync" [attr.datetime]="ultimaSyncEm">
+          Sync {{ ultimaSyncEm | date: 'HH:mm:ss' }}
+        </time>
+      }
+      <p class="painel__resumo-txt">{{ statusIndicadores }}</p>
+    </aside>
   </header>
 
-  @if (carregando) {
-    <p>Carregando…</p>
-  } @else if (erro) {
+  @if (erro) {
     <p class="painel__erro" role="alert">{{ erro }}</p>
-  } @else {
-    <div class="painel__grid">
+  }
+  @if (avisoSuave) {
+    <p class="painel__aviso" role="status">{{ avisoSuave }}</p>
+  }
+
+  <!-- 01 Mercado -->
+  <section class="bloco" aria-labelledby="titulo-mercado">
+    <header class="bloco__cabecalho">
+      <span class="bloco__passo">01</span>
+      <div>
+        <h2 id="titulo-mercado" class="bloco__titulo">Mercado ao vivo</h2>
+        <p class="bloco__desc">Preço e indicadores servidos pelo BFF (HIT no Valkey quando possível).</p>
+      </div>
+    </header>
+    <div class="bloco__corpo painel__grid painel__grid--3">
       @for (item of itens; track item.moeda) {
-        <app-card-moeda [dados]="item" />
+        <app-card-moeda [dados]="item" [estado]="estadoDoCard(item.moeda)" />
       }
     </div>
-  }
+  </section>
+
+  <!-- 02 Análise / série -->
+  <section class="bloco" aria-labelledby="titulo-series">
+    <header class="bloco__cabecalho">
+      <span class="bloco__passo">02</span>
+      <div>
+        <h2 id="titulo-series" class="bloco__titulo">Análise da série</h2>
+        <p class="bloco__desc">
+          Histórico no Valkey (ZSET). Linha azul = preço; linha rosa = média móvel da janela SMA.
+        </p>
+      </div>
+    </header>
+    @if (serieErro) {
+      <p class="painel__aviso" role="status">{{ serieErro }}</p>
+    }
+    <div class="bloco__corpo painel__grid painel__grid--3">
+      @for (item of itens; track item.moeda) {
+        <app-serie-historico [serie]="seriesPorMoeda[item.moeda] || null" />
+      }
+    </div>
+  </section>
+
+  <!-- 03 + 04 Operação -->
+  <section class="bloco bloco--escuro" aria-label="Processamento e observabilidade">
+    <header class="bloco__cabecalho bloco__cabecalho--claro">
+      <span class="bloco__passo">03</span>
+      <div>
+        <h2 class="bloco__titulo">Fila e processamento</h2>
+        <p class="bloco__desc">
+          Beat enfileira → Valkey broker → Worker → pipeline. Em produção o ciclo real dura ~1s;
+          o desenho reapresenta o último ciclo.
+        </p>
+      </div>
+    </header>
+
+    <div class="fila-viz" aria-label="Desenho da fila Celery">
+      <div class="fila-viz__toolbar">
+        <p class="fila-viz__meta-live">
+          O ciclo real no servidor dura ~1s; o desenho reapresenta em câmera lenta (~15s) para você acompanhar.
+        </p>
+        <button
+          type="button"
+          class="fila-viz__btn"
+          (click)="reapresentarCiclo()"
+        >
+          Reapresentar desenho
+        </button>
+      </div>
+
+      <div class="fila-viz__track" role="img" [attr.aria-label]="filaStatus">
+        <div
+          class="fila-viz__node fila-viz__node--beat"
+          [class.fila-viz__node--ativo]="beatAtivo"
+        >
+          <span class="fila-viz__label">Beat</span>
+          <span class="fila-viz__hint">agenda</span>
+        </div>
+
+        <div
+          class="fila-viz__arrow"
+          [class.fila-viz__arrow--flow]="setaEnfileira"
+          aria-hidden="true"
+        >
+          <span class="fila-viz__arrow-line"></span>
+          <span class="fila-viz__arrow-cap">enfileira</span>
+        </div>
+
+        <div
+          class="fila-viz__queue"
+          [class.fila-viz__queue--cheia]="filaCheia"
+        >
+          <span class="fila-viz__queue-title">Fila Valkey</span>
+          <div class="fila-viz__slots">
+            @for (slot of filaSlots; track $index) {
+              <span
+                class="fila-viz__slot"
+                [class.fila-viz__slot--ocupado]="!!slot"
+                [attr.title]="slot || 'vazio'"
+              >{{ slot ? slot.slice(0, 3) : '·' }}</span>
+            }
+          </div>
+          <span class="fila-viz__hint">broker</span>
+        </div>
+
+        <div
+          class="fila-viz__arrow"
+          [class.fila-viz__arrow--flow]="setaConsome"
+          aria-hidden="true"
+        >
+          <span class="fila-viz__arrow-line"></span>
+          <span class="fila-viz__arrow-cap">consome</span>
+        </div>
+
+        <div
+          class="fila-viz__node fila-viz__node--worker"
+          [class.fila-viz__node--ativo]="workerAtivo"
+        >
+          <span class="fila-viz__label">Worker</span>
+          <span class="fila-viz__hint">processa</span>
+        </div>
+
+        <div
+          class="fila-viz__arrow"
+          [class.fila-viz__arrow--flow]="pipelineAtivo"
+          aria-hidden="true"
+        >
+          <span class="fila-viz__arrow-line"></span>
+          <span class="fila-viz__arrow-cap">roda</span>
+        </div>
+
+        <div
+          class="fila-viz__node fila-viz__node--pipeline"
+          [class.fila-viz__node--ativo]="pipelineAtivo"
+        >
+          <span class="fila-viz__label">pipeline</span>
+          <span class="fila-viz__hint">MM / vol</span>
+        </div>
+      </div>
+      <p class="fila-viz__status">{{ filaStatus }}</p>
+
+      <div class="fila-legenda" aria-label="Legenda do fluxo da fila">
+        <h3 class="fila-legenda__title">Como funciona cada etapa</h3>
+        <div class="fila-legenda__grid">
+          <article class="fila-legenda__item fila-legenda__item--beat">
+            <h4>Beat</h4>
+            <p>
+              Agendador Celery (único processo). A cada ~90s publica <strong>um job em lote</strong>
+              no broker — não consulta CoinGecko nem calcula indicadores. Só dispara o ciclo.
+            </p>
+          </article>
+          <article class="fila-legenda__item fila-legenda__item--fila">
+            <h4>Fila Valkey</h4>
+            <p>
+              Valkey como <strong>broker</strong> da fila Celery. Guarda a mensagem até o Worker
+              consumir. As bolinhas no desenho representam as moedas do lote
+              (bitcoin, ethereum, solana) a caminho do processamento.
+            </p>
+          </article>
+          <article class="fila-legenda__item fila-legenda__item--worker">
+            <h4>Worker</h4>
+            <p>
+              Processo Celery que <strong>consome a fila</strong>. No ciclo atual faz
+              <em>1 chamada CoinGecko em lote</em> e em seguida roda o pipeline para cada moeda,
+              de forma assíncrona (fora do request do browser).
+            </p>
+          </article>
+          <article class="fila-legenda__item fila-legenda__item--pipeline">
+            <h4>pipeline</h4>
+            <p>
+              Código único (<code>pipeline.py</code> + <code>indicators.py</code>):
+              cotação → grava série ZSET → calcula média móvel e volatilidade → grava cache
+              STRING+TTL. Usado pelo Worker e também no MISS do BFF.
+            </p>
+          </article>
+        </div>
+        <p class="fila-legenda__fluxo">
+          Fluxo: <strong>Beat</strong> agenda → <strong>Fila Valkey</strong> segura →
+          <strong>Worker</strong> puxa → <strong>pipeline</strong> calcula → cards leem o cache (HIT).
+        </p>
+      </div>
+    </div>
+
+    <header class="bloco__cabecalho bloco__cabecalho--claro bloco__cabecalho--sub">
+      <span class="bloco__passo">04</span>
+      <div>
+        <h2 class="bloco__titulo">Observabilidade</h2>
+        <p class="bloco__desc">
+          Eventos em <code>observability:events</code> · atualização ~1,5s
+        </p>
+      </div>
+    </header>
+
+    <div class="log-wrap">
+      <div class="log">
+        <header class="log__header">
+          <h3>Log ao vivo</h3>
+          <p class="log__meta">BFF · Beat · Worker · Valkey · pipeline · CoinGecko</p>
+        </header>
+
+        @if (logErro) {
+          <p class="painel__erro" role="alert">{{ logErro }}</p>
+        } @else if (eventos.length === 0) {
+          <p class="log__empty">Aguardando eventos… espere o Beat (~90s) ou um refresh do dashboard.</p>
+        } @else {
+          <ul class="log__list">
+            @for (ev of eventos; track ev.ts + ev.message) {
+              <li class="log__item">
+                <time class="log__ts">{{ ev.ts | date: 'HH:mm:ss' }}</time>
+                <span [class]="classeFonte(ev.source)">{{ ev.source }}</span>
+                <span class="log__tech">{{ ev.tech }}</span>
+                <span class="log__msg">{{ ev.message }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <aside class="guia" aria-label="Como interpretar o log">
+        <h3 class="guia__title">Como ler o log</h3>
+
+        <h4 class="guia__subtitle">Dois caminhos</h4>
+        <ol class="guia__list">
+          <li>
+            <strong>Reativo</strong> (você abriu a página) —
+            <span class="log__src log__src--bff">bff</span> +
+            <span class="log__src log__src--valkey-cache">valkey_cache</span>.
+            <em>HIT</em> = respondeu do cache.
+            <em>MISS</em> = lote CoinGecko + pipeline.
+          </li>
+          <li>
+            <strong>Proativo</strong> (a cada ~90s) —
+            <span class="log__src log__src--beat">beat</span> →
+            <span class="log__src log__src--valkey-broker">valkey_broker</span> →
+            <span class="log__src log__src--worker">worker</span> →
+            <span class="log__src log__src--pipeline">pipeline</span>.
+            Depois o BFF tende a HIT.
+          </li>
+        </ol>
+
+        <h4 class="guia__subtitle">Fila (desenho acima)</h4>
+        <dl class="guia__dl">
+          <div class="guia__row">
+            <dt><span class="log__src log__src--beat">Beat</span></dt>
+            <dd>Só agenda o lote; não processa preço.</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--valkey-broker">Fila</span></dt>
+            <dd>Valkey broker — mensagens Celery até o Worker.</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--worker">Worker</span></dt>
+            <dd>Consome a fila; 1× CoinGecko em lote + pipeline.</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--pipeline">pipeline</span></dt>
+            <dd>Série ZSET → MM/vol → cache TTL.</dd>
+          </div>
+        </dl>
+
+        <h4 class="guia__subtitle">Outras tags</h4>
+        <dl class="guia__dl">
+          <div class="guia__row">
+            <dt><span class="log__src log__src--bff">bff</span></dt>
+            <dd>Rota <code>/api/dashboard</code> — entrega JSON.</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--valkey-cache">cache</span></dt>
+            <dd>STRING + TTL dos indicadores.</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--valkey-serie">série</span></dt>
+            <dd>ZSET de preços (base da MM).</dd>
+          </div>
+          <div class="guia__row">
+            <dt><span class="log__src log__src--coingecko">coingecko</span></dt>
+            <dd>API externa (lote ou unitária).</dd>
+          </div>
+        </dl>
+
+        <p class="guia__tip">
+          Ciclo saudável no log: <em>Enfileirou</em> → <em>Consulta em lote</em> →
+          <em>Pipeline concluido</em> → <em>Task concluida (SUCCESS)</em>.
+          HTTP 429 = rate limit CoinGecko (o lote reduz isso).
+        </p>
+      </aside>
+    </div>
+  </section>
 </main>

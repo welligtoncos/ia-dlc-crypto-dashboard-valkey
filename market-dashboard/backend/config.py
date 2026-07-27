@@ -21,6 +21,10 @@ COINGECKO_BASE_URL: str = os.getenv(
 )
 COINGECKO_TIMEOUT_SECONDS: float = float(os.getenv("COINGECKO_TIMEOUT_SECONDS", "10"))
 COINGECKO_VS_CURRENCY: str = os.getenv("COINGECKO_VS_CURRENCY", "usd")
+# Espaço mínimo entre requests CoinGecko (BFF + worker compartilham via Valkey).
+COINGECKO_MIN_INTERVAL_SECONDS: float = float(
+    os.getenv("COINGECKO_MIN_INTERVAL_SECONDS", "2.5"),
+)
 
 # Moedas do dashboard (H11) — lista separada por vírgula; nova moeda só na config.
 _DASHBOARD_COINS_RAW: str = os.getenv(
@@ -41,13 +45,13 @@ _DEFAULT_CELERY_URL = f"redis://{VALKEY_HOST}:{VALKEY_PORT}/{VALKEY_DB}"
 CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", _DEFAULT_CELERY_URL)
 CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", _DEFAULT_CELERY_URL)
 
-# Celery Beat (H13) — intervalo do batch proativo.
-# Default 60s: alinhado ao TTL do cache; 3 moedas ≈ 3 req/min (API keyless ~10–50 req/min).
-# Não reduzir agressivamente nem subir múltiplos beats (um único serviço beat no Compose).
-BEAT_INTERVAL_SECONDS: int = int(os.getenv("BEAT_INTERVAL_SECONDS", "60"))
+# Celery Beat (H13) — um job em lote (1 req CoinGecko) a cada intervalo.
+# Default 90s: alivia rate limit keyless; alinhar TTL do cache.
+# Não subir múltiplos beats (um único serviço beat no Compose/ECS).
+BEAT_INTERVAL_SECONDS: int = int(os.getenv("BEAT_INTERVAL_SECONDS", "90"))
 
 # Cache-aside (H06) — TTL do payload de indicadores em segundos.
-CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
+CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "90"))
 
 
 # Série temporal (H08) — máximo de pontos por moeda.
@@ -55,3 +59,6 @@ SERIES_MAX_POINTS: int = int(os.getenv("SERIES_MAX_POINTS", "100"))
 
 # Indicadores (H09) — quantos preços recentes usar na média móvel.
 SMA_WINDOW: int = int(os.getenv("SMA_WINDOW", "20"))
+
+# Painel didatico — quantos eventos manter no Valkey LIST observability:events
+OBSERVABILITY_MAX_EVENTS: int = int(os.getenv("OBSERVABILITY_MAX_EVENTS", "100"))

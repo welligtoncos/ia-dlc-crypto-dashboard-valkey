@@ -1,0 +1,132 @@
+.serie {
+  background: #fffcfa;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  padding: 0.95rem 1rem 0.85rem;
+  min-height: 100%;
+  box-sizing: border-box;
+  font-family: 'Iowan Old Style', Palatino, Georgia, serif;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 0 rgba(28, 25, 23, 0.04);
+}
+
+.serie__header {
+  margin-bottom: 0.55rem;
+}
+
+.serie__titulo {
+  margin: 0;
+  font-size: 1.05rem;
+  text-transform: capitalize;
+  color: #1c1917;
+}
+
+.serie__meta {
+  margin: 0.2rem 0 0;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.64rem;
+  color: #a8a29e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serie__vazio {
+  margin: 0.5rem 0 0;
+  color: #78716c;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.serie__chart {
+  width: 100%;
+  height: 4.5rem;
+  display: block;
+  background: linear-gradient(180deg, #fafaf9 0%, #f5f5f4 100%);
+  border-radius: 8px;
+  border: 1px solid #e7e5e4;
+}
+
+.serie__line {
+  fill: none;
+  stroke-width: 1.85;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.serie__line--preco { stroke: #2563eb; }
+.serie__line--mm {
+  stroke: #be185d;
+  stroke-dasharray: 3 2;
+}
+
+.serie__legenda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.7rem;
+  margin: 0.4rem 0 0.55rem;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.66rem;
+  color: #78716c;
+}
+
+.serie__swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 0.2rem;
+  vertical-align: middle;
+}
+
+.serie__swatch--preco { background: #2563eb; }
+.serie__swatch--mm { background: #be185d; }
+
+.serie__table-wrap {
+  max-height: 9.5rem;
+  overflow: auto;
+  border: 1px solid #e7e5e4;
+  border-radius: 8px;
+  flex: 1;
+}
+
+.serie__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.7rem;
+}
+
+.serie__table th,
+.serie__table td {
+  padding: 0.32rem 0.45rem;
+  text-align: right;
+  border-bottom: 1px solid #f5f5f4;
+}
+
+.serie__table th:first-child,
+.serie__table td:first-child {
+  text-align: left;
+}
+
+.serie__table th {
+  position: sticky;
+  top: 0;
+  background: #fafaf9;
+  color: #78716c;
+  font-weight: 600;
+}
+
+.serie__table td {
+  color: #1c1917;
+  font-variant-numeric: tabular-nums;
+}
+
+.serie__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.72rem;
+  color: #78716c;
+  line-height: 1.35;
+}

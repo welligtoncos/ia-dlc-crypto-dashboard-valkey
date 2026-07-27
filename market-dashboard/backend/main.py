@@ -24,11 +24,15 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import CORS_ORIGINS, DASHBOARD_COIN_IDS
+from config import CORS_ORIGINS, DASHBOARD_COIN_IDS, SERIES_MAX_POINTS, SMA_WINDOW
 from services.cache import get as cache_get
+from services.cache import get_ultimos_pontos
 from services.cache import ping as valkey_ping
+from services.cache import serie_key
 from services.coingecko import CoinGeckoError
-from services.pipeline import cache_key, processar_moeda
+from services.indicators import media_movel
+from services.observability import emit, list_events
+from services.pipeline import cache_key, processar_moedas
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -64,24 +68,6 @@ def health() -> dict:
     return {"status": status, "valkey": ok, "moedas": DASHBOARD_COIN_IDS}
 
 
-def _build_coin_payload(coin_id: str, *, refresh: bool) -> tuple[dict[str, Any], str]:
-    """
-    Retorna (payload, origem HIT|MISS) para uma moeda.
-    HIT: lê cache. MISS/refresh: chama pipeline.processar_moeda (único caminho).
-    Levanta CoinGeckoError se a fonte falhar no MISS.
-    """
-    key = cache_key(coin_id)
-
-    if not refresh:
-        cached = cache_get(key)
-        if isinstance(cached, dict):
-            return cached, "HIT"
-
-    logger.info("cache MISS key=%s refresh=%s — pipeline", key, refresh)
-    payload = processar_moeda(coin_id)
-    return payload, "MISS"
-
-
 @app.get("/api/dashboard")
 def get_dashboard(
     response: Response,
@@ -89,31 +75,56 @@ def get_dashboard(
 ) -> list[dict[str, Any]]:
     """
     H11: uma entrada por moeda em DASHBOARD_COIN_IDS.
-    Falha em uma moeda não impede as demais; 502 só se nenhuma tiver sucesso.
+    HIT por moeda no Valkey; MISS em lote (1 request CoinGecko) para reduzir 429.
     """
     started = time.perf_counter()
     if not DASHBOARD_COIN_IDS:
         raise HTTPException(status_code=500, detail="Nenhuma moeda configurada em DASHBOARD_COIN_IDS")
 
-    items: list[dict[str, Any]] = []
-    origens: list[str] = []
+    por_moeda: dict[str, dict[str, Any]] = {}
+    origens: dict[str, str] = {}
+    misses: list[str] = []
 
     for coin_id in DASHBOARD_COIN_IDS:
-        try:
-            payload, origem = _build_coin_payload(coin_id, refresh=refresh)
-            items.append(payload)
-            origens.append(origem)
-        except CoinGeckoError as exc:
-            logger.error("falha parcial coin=%s erro=%s", coin_id, exc)
-            continue
+        key = cache_key(coin_id)
+        if not refresh:
+            cached = cache_get(key)
+            if isinstance(cached, dict):
+                por_moeda[coin_id] = cached
+                origens[coin_id] = "HIT"
+                continue
+        emit(
+            "valkey_cache",
+            "Valkey STRING+TTL",
+            f"MISS — chave ausente/expirada {key}",
+            detail={"chave": key, "moeda": coin_id, "refresh": refresh},
+        )
+        emit(
+            "bff",
+            "FastAPI BFF",
+            f"MISS {coin_id} — entrara no lote CoinGecko",
+            detail={"moeda": coin_id, "origem": "MISS"},
+        )
+        misses.append(coin_id)
 
+    if misses:
+        try:
+            for payload in processar_moedas(misses):
+                cid = str(payload.get("moeda"))
+                por_moeda[cid] = payload
+                origens[cid] = "MISS"
+        except CoinGeckoError as exc:
+            logger.error("falha no lote CoinGecko misses=%s erro=%s", misses, exc)
+
+    items = [por_moeda[c] for c in DASHBOARD_COIN_IDS if c in por_moeda]
     if not items:
         raise HTTPException(
             status_code=502,
             detail="Não foi possível obter dados da CoinGecko para nenhuma moeda configurada.",
         )
 
-    origem_geral = "HIT" if origens and all(o == "HIT" for o in origens) else "MISS"
+    origem_list = [origens[c] for c in DASHBOARD_COIN_IDS if c in origens]
+    origem_geral = "HIT" if origem_list and all(o == "HIT" for o in origem_list) else "MISS"
     response.headers["X-Cache"] = origem_geral
     elapsed_ms = (time.perf_counter() - started) * 1000
     logger.info(
@@ -124,4 +135,63 @@ def get_dashboard(
         elapsed_ms,
         refresh,
     )
+    emit(
+        "bff",
+        "FastAPI BFF",
+        f"GET /api/dashboard X-Cache={origem_geral} "
+        f"ok={len(items)}/{len(DASHBOARD_COIN_IDS)} {elapsed_ms:.0f}ms",
+        detail={"origem": origem_geral, "latencia_ms": round(elapsed_ms, 2)},
+    )
     return items
+
+
+@app.get("/api/observability/events")
+def get_observability_events(limit: int = Query(50, ge=1, le=100)) -> list[dict[str, Any]]:
+    """Historico didatico recente (Valkey LIST) — BFF, pipeline, Beat, Worker, Valkey, CoinGecko."""
+    return list_events(limit=limit)
+
+
+@app.get("/api/series/{moeda}")
+def get_serie(
+    moeda: str,
+    limit: int = Query(40, ge=2, le=100, description="Quantos pontos retornar (mais recentes)"),
+) -> dict[str, Any]:
+    """
+    Histórico de preços da série Valkey (ZSET) para acompanhar a MM.
+
+    Para cada ponto, media_movel é a média da janela SMA_WINDOW terminando naquele ponto
+    (None se ainda não houver pontos suficientes). Cálculo no BFF — Angular só exibe.
+    """
+    coin_id = moeda.strip().lower()
+    if coin_id not in DASHBOARD_COIN_IDS:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Moeda '{coin_id}' não está em DASHBOARD_COIN_IDS.",
+        )
+
+    n = min(limit, SERIES_MAX_POINTS)
+    brutos = get_ultimos_pontos(coin_id, n)
+    precos = [float(p["preco"]) for p in brutos]
+    pontos: list[dict[str, Any]] = []
+    for i, p in enumerate(brutos):
+        # MM completa só com janela SMA_WINDOW (igual ao pipeline).
+        if i + 1 >= SMA_WINDOW:
+            janela = precos[i + 1 - SMA_WINDOW : i + 1]
+            mm = media_movel(janela)
+        else:
+            mm = None
+        pontos.append(
+            {
+                "ts": p["ts"],
+                "preco": p["preco"],
+                "media_movel": mm,
+            }
+        )
+
+    return {
+        "moeda": coin_id,
+        "chave": serie_key(coin_id),
+        "janela_sma": SMA_WINDOW,
+        "total": len(pontos),
+        "pontos": pontos,
+    }

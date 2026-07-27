@@ -6,7 +6,6 @@ from config import (
     BEAT_INTERVAL_SECONDS,
     CELERY_BROKER_URL,
     CELERY_RESULT_BACKEND,
-    DASHBOARD_COIN_IDS,
 )
 
 app = Celery(
@@ -16,21 +15,24 @@ app = Celery(
     include=["tasks"],
 )
 
-# Uma entrada de schedule por moeda; um único processo beat no Compose (sem agendadores duplicados).
-_beat_schedule = {
-    f"processar-moeda-{coin_id}": {
-        "task": "tasks.processar_moeda_task",
-        "schedule": float(BEAT_INTERVAL_SECONDS),
-        "args": (coin_id,),
-    }
-    for coin_id in DASHBOARD_COIN_IDS
-}
-
+# Um único job periodico: 1 chamada CoinGecko em lote + pipeline por moeda.
+# Evita 3 tasks simultaneas (causa frequente de HTTP 429).
 app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
-    beat_schedule=_beat_schedule,
+    worker_prefetch_multiplier=1,
+    task_acks_late=True,
+    beat_schedule={
+        "processar-dashboard-lote": {
+            "task": "tasks.processar_dashboard_batch",
+            "schedule": float(BEAT_INTERVAL_SECONDS),
+            "args": ("beat",),
+        },
+    },
 )
+
+# Carrega tasks + sinais para o log didatico.
+import tasks as _tasks  # noqa: E402, F401

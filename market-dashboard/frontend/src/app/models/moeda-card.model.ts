@@ -14,5 +14,5 @@ export interface DashboardItem {
 /** Alias usado pelo CardMoeda (mesmos campos de exibição). */
 export type MoedaCard = Pick<
   DashboardItem,
-  'moeda' | 'preco' | 'variacao_24h' | 'media_movel' | 'volatilidade'
+  'moeda' | 'preco' | 'variacao_24h' | 'media_movel' | 'volatilidade' | 'atualizado_em'
 >;
