@@ -295,3 +295,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U1 H03 done
 
 ---
+
+## Construction H04 — Concluída
+**Timestamp**: 2026-07-27T02:03:00Z
+**User Input**: "prossiga com h04"
+**AI Response**: H04: rota /api/dashboard chama get_market_data; 502 amigável em CoinGeckoError; Angular exibe detail/erro sem quebrar. Sem Valkey/cache.
+**Context**: Construction U1 H04 done — Fase 1 completa
+
+---

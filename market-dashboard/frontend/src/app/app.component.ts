@@ -1,4 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CardMoedaComponent } from './card-moeda/card-moeda.component';
 import { MoedaCard } from './models/moeda-card.model';
 import { DashboardService } from './services/dashboard.service';
@@ -27,12 +28,28 @@ export class AppComponent implements OnInit {
           media_movel: item.media_movel,
           volatilidade: item.volatilidade,
         };
+        this.erro = null;
         this.carregando = false;
       },
-      error: () => {
-        this.erro = 'Não foi possível carregar o dashboard. Verifique se o BFF está em http://localhost:8000.';
+      error: (err: HttpErrorResponse) => {
+        this.dados = null;
+        this.erro = this.mensagemErro(err);
         this.carregando = false;
       },
     });
+  }
+
+  private mensagemErro(err: HttpErrorResponse): string {
+    const detail = err.error?.detail;
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail;
+    }
+    if (err.status === 502) {
+      return 'Fonte externa indisponível. Tente novamente em instantes.';
+    }
+    if (err.status === 0) {
+      return 'Não foi possível conectar ao BFF. Confira se está em http://localhost:8000.';
+    }
+    return `Erro ao carregar o dashboard (HTTP ${err.status}).`;
   }
 }

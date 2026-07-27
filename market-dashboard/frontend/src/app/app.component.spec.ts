@@ -12,7 +12,7 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('deve renderizar o card com dados do endpoint mock', () => {
+  it('deve renderizar dados reais do dashboard', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -20,8 +20,8 @@ describe('AppComponent', () => {
     const req = http.expectOne(`${environment.apiBaseUrl}/api/dashboard`);
     req.flush({
       moeda: 'bitcoin',
-      preco: 100000,
-      variacao_24h: 2.5,
+      preco: 65151,
+      variacao_24h: 1.14,
       media_movel: null,
       volatilidade: null,
       atualizado_em: '2026-07-27T00:00:00+00:00',
@@ -30,7 +30,25 @@ describe('AppComponent', () => {
 
     const el: HTMLElement = fixture.nativeElement;
     expect(el.textContent).toContain('bitcoin');
-    expect(el.textContent).toContain('100000');
+    expect(el.textContent).toContain('65151');
+    http.verify();
+  });
+
+  it('deve exibir estado de erro em 502 sem quebrar', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const http = TestBed.inject(HttpTestingController);
+    fixture.detectChanges();
+
+    const req = http.expectOne(`${environment.apiBaseUrl}/api/dashboard`);
+    req.flush(
+      { detail: 'Não foi possível obter dados da fonte externa (CoinGecko). timeout' },
+      { status: 502, statusText: 'Bad Gateway' },
+    );
+    fixture.detectChanges();
+
+    const el: HTMLElement = fixture.nativeElement;
+    expect(el.textContent).toContain('CoinGecko');
+    expect(el.querySelector('app-card-moeda')).toBeNull();
     http.verify();
   });
 });

@@ -10,3 +10,6 @@ COINGECKO_BASE_URL: str = os.getenv(
 )
 COINGECKO_TIMEOUT_SECONDS: float = float(os.getenv("COINGECKO_TIMEOUT_SECONDS", "10"))
 COINGECKO_VS_CURRENCY: str = os.getenv("COINGECKO_VS_CURRENCY", "usd")
+
+# Moeda exibida no dashboard (H04 — uma moeda; multi vem depois).
+DASHBOARD_COIN_ID: str = os.getenv("DASHBOARD_COIN_ID", "bitcoin")
