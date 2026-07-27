@@ -1,13 +1,13 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U3 — H09 concluída (média móvel)
+CONSTRUCTION — U3 — H10 concluída (Fase 3 indicadores completa)
 
 ## Progresso Construction
-- [x] H01–H08
-- [x] H09 — Média móvel
-- [ ] H10 — Volatilidade
-- [ ] H11 … H20
+- [x] H01–H07 — Fases 1–2
+- [x] H08–H10 — Fase 3 (série, SMA, volatilidade)
+- [ ] H11 — Múltiplas moedas
+- [ ] H12 … H20
 
 ## Próximo
-Após validar H09, plano da **H10**.
+Após validar H10, plano da **H11** (Fase 4).

@@ -343,3 +343,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U3 H09 done
 
 ---
+
+## Construction H10 — Concluída
+**Timestamp**: 2026-07-27T02:17:30Z
+**User Input**: "prossiga com h10"
+**AI Response**: H10: volatilidade = desvio-padrão amostral dos retornos simples × 100; null se <3 preços; integrado no MISS. Card com 4 indicadores. Fase 3 completa.
+**Context**: Construction U3 H10 done
+
+---

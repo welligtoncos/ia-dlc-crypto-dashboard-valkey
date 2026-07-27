@@ -15,7 +15,7 @@ H05: GET /health (PING Valkey).
 H06: cache-aside com TTL configurável.
 H07: header X-Cache, log de latência, ?refresh=true.
 H08: no MISS, acumula preço na série Valkey.
-H09: no MISS, calcula media_movel a partir da série (indicators.py).
+H09/H10: no MISS, calcula media_movel e volatilidade (indicators.py).
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ from services.cache import get_ultimos_precos
 from services.cache import ping as valkey_ping
 from services.cache import set as cache_set
 from services.coingecko import CoinGeckoError, get_market_data
-from services.indicators import media_movel
+from services.indicators import media_movel, volatilidade
 
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
@@ -141,13 +141,14 @@ def get_dashboard(
     # H09: cálculo só em indicators.py; rota apenas lê a série e orquestra.
     precos = get_ultimos_precos(coin_id, SMA_WINDOW)
     sma = media_movel(precos)
+    vol = volatilidade(precos)
 
     payload: dict[str, Any] = {
         "moeda": coin_id,
         "preco": preco,
         "variacao_24h": market["variacao_24h"],
         "media_movel": sma,
-        "volatilidade": None,
+        "volatilidade": vol,
         "atualizado_em": datetime.now(timezone.utc).isoformat(),
     }
     cache_set(key, payload, ttl=CACHE_TTL_SECONDS)
