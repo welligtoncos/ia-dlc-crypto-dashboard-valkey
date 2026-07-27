@@ -391,3 +391,19 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U4 H13 done — Fase 4 completa
 
 ---
+
+## Construction H14 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:30:45Z
+**User Input**: "OK"
+**AI Response**: Plano H14 aprovado; criando infra/ (main, variables, network, outputs); init+plan.
+**Context**: Construction U5 H14
+
+---
+
+## Construction H14 — Concluída
+**Timestamp**: 2026-07-27T02:32:30Z
+**User Input**: "OK"
+**AI Response**: H14: infra/ main+variables+network+outputs; state local com migração S3 comentada; trade-off Fargate público sem NAT. terraform init+plan: 12 to add (VPC, 2 pub, 2 priv, IGW, RTs). Apply não executado automaticamente.
+**Context**: Construction U5 H14 done
+
+---
