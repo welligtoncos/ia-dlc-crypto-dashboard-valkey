@@ -17,6 +17,8 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: "6379"
       DASHBOARD_COIN_IDS: bitcoin,ethereum,solana
+      BEAT_INTERVAL_SECONDS: "60"
+      CACHE_TTL_SECONDS: "60"
     depends_on:
       valkey:
         condition: service_healthy
@@ -29,17 +31,24 @@ services:
       VALKEY_HOST: valkey
       VALKEY_PORT: "6379"
       DASHBOARD_COIN_IDS: bitcoin,ethereum,solana
+      BEAT_INTERVAL_SECONDS: "60"
+      CACHE_TTL_SECONDS: "60"
     depends_on:
       valkey:
         condition: service_healthy
 
-  # --- História 13 (Celery Beat): descomentar neste slot ---
-  # beat:
-  #   build: ./backend
-  #   command: celery -A celery_app beat --loglevel=info
-  #   environment:
-  #     VALKEY_HOST: valkey
-  #     VALKEY_PORT: "6379"
-  #   depends_on:
-  #     - valkey
-  #     - worker
+  # H13 — exatamente UM beat (não subir réplicas; dois beats duplicariam o schedule)
+  beat:
+    build: ./backend
+    command: celery -A celery_app beat --loglevel=info
+    environment:
+      VALKEY_HOST: valkey
+      VALKEY_PORT: "6379"
+      DASHBOARD_COIN_IDS: bitcoin,ethereum,solana
+      BEAT_INTERVAL_SECONDS: "60"
+      CACHE_TTL_SECONDS: "60"
+    depends_on:
+      valkey:
+        condition: service_healthy
+      worker:
+        condition: service_started

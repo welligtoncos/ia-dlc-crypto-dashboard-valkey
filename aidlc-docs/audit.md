@@ -375,3 +375,19 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U4 H12 done
 
 ---
+
+## Construction H13 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:25:30Z
+**User Input**: "OK"
+**AI Response**: Plano H13 aprovado; iniciando Beat + schedule + README.
+**Context**: Construction U4 H13
+
+---
+
+## Construction H13 — Concluída
+**Timestamp**: 2026-07-27T02:27:30Z
+**User Input**: "OK"
+**AI Response**: H13: BEAT_INTERVAL_SECONDS; beat_schedule por moeda; serviço beat único no Compose; README reativo vs proativo. Validado: beat enviou BTC/ETH/SOL; worker ok; /api/dashboard X-Cache: HIT.
+**Context**: Construction U4 H13 done — Fase 4 completa
+
+---

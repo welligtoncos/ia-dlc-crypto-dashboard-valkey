@@ -30,8 +30,14 @@ _DEFAULT_CELERY_URL = f"redis://{VALKEY_HOST}:{VALKEY_PORT}/{VALKEY_DB}"
 CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", _DEFAULT_CELERY_URL)
 CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", _DEFAULT_CELERY_URL)
 
+# Celery Beat (H13) — intervalo do batch proativo.
+# Default 60s: alinhado ao TTL do cache; 3 moedas ≈ 3 req/min (API keyless ~10–50 req/min).
+# Não reduzir agressivamente nem subir múltiplos beats (um único serviço beat no Compose).
+BEAT_INTERVAL_SECONDS: int = int(os.getenv("BEAT_INTERVAL_SECONDS", "60"))
+
 # Cache-aside (H06) — TTL do payload de indicadores em segundos.
 CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
+
 
 # Série temporal (H08) — máximo de pontos por moeda.
 SERIES_MAX_POINTS: int = int(os.getenv("SERIES_MAX_POINTS", "100"))
