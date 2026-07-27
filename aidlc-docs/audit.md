@@ -407,3 +407,27 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U5 H14 done
 
 ---
+
+## Construction H15 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:33:45Z
+**User Input**: "OK"
+**AI Response**: Plano H15 aprovado; criando ecr.tf, outputs e docs de push; terraform plan.
+**Context**: Construction U5 H15
+
+---
+
+## Construction H15 — Concluída
+**Timestamp**: 2026-07-27T02:35:00Z
+**User Input**: "OK"
+**AI Response**: H15: ecr.tf (repo + lifecycle 5 imgs); outputs ecr_repository_url; docs push em infra/README.md; Dockerfile comentado multi-comando. Plan: 2 to add. Apply/push não executados (aguardar operador).
+**Context**: Construction U5 H15 done
+
+---
+
+## Construction H15 — Fix lifecycle IAM
+**Timestamp**: 2026-07-27T02:36:00Z
+**User Input**: "[erro terraform PutLifecyclePolicy AccessDeniedException usuario-dados]"
+**AI Response**: Removido aws_ecr_lifecycle_policy; repo ECR já criado; H15 não exige lifecycle.
+**Context**: H15 apply recovery
+
+---

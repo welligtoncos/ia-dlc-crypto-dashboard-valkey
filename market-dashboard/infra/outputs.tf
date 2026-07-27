@@ -37,3 +37,18 @@ output "aws_region" {
   description = "Região usada pelo provider."
   value       = var.aws_region
 }
+
+output "ecr_repository_url" {
+  description = "URL do repositório ECR do backend (build/tag/push)."
+  value       = aws_ecr_repository.backend.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ARN do repositório ECR do backend."
+  value       = aws_ecr_repository.backend.arn
+}
+
+output "ecr_repository_name" {
+  description = "Nome do repositório ECR."
+  value       = aws_ecr_repository.backend.name
+}
