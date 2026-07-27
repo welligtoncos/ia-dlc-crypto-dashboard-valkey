@@ -11,33 +11,24 @@ Contrato GET /api/dashboard (H11+): lista JSON de objetos
 
 Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
 
-H05–H10: health, cache-aside, X-Cache, série, SMA, volatilidade.
-H11: múltiplas moedas via DASHBOARD_COIN_IDS (cache/série por moeda).
+H05–H11: health, cache-aside, X-Cache, série, SMA, volatilidade, multi-moeda.
+H12: MISS via pipeline.py (mesmo caminho da task Celery).
 """
 
 from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import (
-    CACHE_TTL_SECONDS,
-    DASHBOARD_COIN_IDS,
-    SERIES_MAX_POINTS,
-    SMA_WINDOW,
-)
-from services.cache import append_preco
+from config import DASHBOARD_COIN_IDS
 from services.cache import get as cache_get
-from services.cache import get_ultimos_precos
 from services.cache import ping as valkey_ping
-from services.cache import set as cache_set
-from services.coingecko import CoinGeckoError, get_market_data
-from services.indicators import media_movel, volatilidade
+from services.coingecko import CoinGeckoError
+from services.pipeline import cache_key, processar_moeda
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -75,37 +66,21 @@ def health() -> dict:
     return {"status": status, "valkey": ok, "moedas": DASHBOARD_COIN_IDS}
 
 
-def _cache_key(coin_id: str) -> str:
-    return f"dashboard:{coin_id}:indicadores"
-
-
 def _build_coin_payload(coin_id: str, *, refresh: bool) -> tuple[dict[str, Any], str]:
     """
     Retorna (payload, origem HIT|MISS) para uma moeda.
+    HIT: lê cache. MISS/refresh: chama pipeline.processar_moeda (único caminho).
     Levanta CoinGeckoError se a fonte falhar no MISS.
     """
-    key = _cache_key(coin_id)
+    key = cache_key(coin_id)
 
     if not refresh:
         cached = cache_get(key)
         if isinstance(cached, dict):
             return cached, "HIT"
 
-    logger.info("cache MISS key=%s refresh=%s — consultando CoinGecko", key, refresh)
-    market = get_market_data(coin_id)
-    preco = float(market["preco"])
-    append_preco(coin_id, preco, max_n=SERIES_MAX_POINTS)
-
-    precos = get_ultimos_precos(coin_id, SMA_WINDOW)
-    payload: dict[str, Any] = {
-        "moeda": coin_id,
-        "preco": preco,
-        "variacao_24h": market["variacao_24h"],
-        "media_movel": media_movel(precos),
-        "volatilidade": volatilidade(precos),
-        "atualizado_em": datetime.now(timezone.utc).isoformat(),
-    }
-    cache_set(key, payload, ttl=CACHE_TTL_SECONDS)
+    logger.info("cache MISS key=%s refresh=%s — pipeline", key, refresh)
+    payload = processar_moeda(coin_id)
     return payload, "MISS"
 
 

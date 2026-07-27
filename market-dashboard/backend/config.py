@@ -25,6 +25,11 @@ VALKEY_HOST: str = os.getenv("VALKEY_HOST", "localhost")
 VALKEY_PORT: int = int(os.getenv("VALKEY_PORT", "6379"))
 VALKEY_DB: int = int(os.getenv("VALKEY_DB", "0"))
 
+# Celery (H12) — broker e result backend = Valkey (mesmo host/porta por padrão).
+_DEFAULT_CELERY_URL = f"redis://{VALKEY_HOST}:{VALKEY_PORT}/{VALKEY_DB}"
+CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", _DEFAULT_CELERY_URL)
+CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", _DEFAULT_CELERY_URL)
+
 # Cache-aside (H06) — TTL do payload de indicadores em segundos.
 CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
 

@@ -1,13 +1,13 @@
 # Acompanhamento de Estado AI-DLC
 
 ## Estágio Atual
-CONSTRUCTION — U4 — H11 concluída (múltiplas moedas)
+CONSTRUCTION — U4 — H12 concluída (Celery + pipeline)
 
 ## Progresso Construction
-- [x] H01–H10 — Fases 1–3
-- [x] H11 — Múltiplas moedas
-- [ ] H12 — Celery + pipeline
-- [ ] H13 … H20
+- [x] H01–H11 — Fases 1–4 (parcial)
+- [x] H12 — Celery + pipeline
+- [ ] H13 — Celery Beat
+- [ ] H14 … H20
 
 ## Próximo
-Após validar H11, plano da **H12**.
+Após validar H12, plano da **H13**.

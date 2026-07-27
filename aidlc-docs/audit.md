@@ -359,3 +359,19 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U4 H11 done
 
 ---
+
+## Construction H12 — Aprovação do plano
+**Timestamp**: 2026-07-27T02:22:00Z
+**User Input**: "OK"
+**AI Response**: Plano H12 aprovado; iniciando implementação (pipeline + Celery worker).
+**Context**: Construction U4 H12
+
+---
+
+## Construction H12 — Concluída
+**Timestamp**: 2026-07-27T02:23:30Z
+**User Input**: "OK"
+**AI Response**: H12: pipeline.processar_moeda; celery_app + tasks; worker no Compose; rota MISS chama pipeline. Validado: worker ready no Valkey; task delay('bitcoin') gravou cache; sem beat.
+**Context**: Construction U4 H12 done
+
+---
