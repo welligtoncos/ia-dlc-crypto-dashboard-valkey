@@ -311,3 +311,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U2 H05 done
 
 ---
+
+## Construction H06 — Concluída
+**Timestamp**: 2026-07-27T02:09:30Z
+**User Input**: "prossiga com proxima historia h06"
+**AI Response**: H06: cache-aside chave dashboard:{coin}:indicadores, CACHE_TTL_SECONDS=60. Validado HIT (mesmo atualizado_em nas 2 chamadas). Sem série/indicadores.
+**Context**: Construction U2 H06 done
+
+---

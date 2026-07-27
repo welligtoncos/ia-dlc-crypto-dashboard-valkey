@@ -11,17 +11,21 @@ Contrato GET /api/dashboard (JSON):
 
 Espelhado no frontend em src/app/models/moeda-card.model.ts (DashboardItem).
 
-H05: healthcheck Valkey em GET /health — cache-aside na rota só na H06.
+H05: GET /health (PING Valkey).
+H06: cache-aside na rota com TTL configurável.
 """
 
 from datetime import datetime, timezone
 import logging
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import DASHBOARD_COIN_ID
+from config import CACHE_TTL_SECONDS, DASHBOARD_COIN_ID
+from services.cache import get as cache_get
 from services.cache import ping as valkey_ping
+from services.cache import set as cache_set
 from services.coingecko import CoinGeckoError, get_market_data
 
 logger = logging.getLogger(__name__)
@@ -57,13 +61,25 @@ def health() -> dict:
     return {"status": status, "valkey": ok}
 
 
+def _cache_key(coin_id: str) -> str:
+    return f"dashboard:{coin_id}:indicadores"
+
+
 @app.get("/api/dashboard")
-def get_dashboard() -> dict:
+def get_dashboard() -> dict[str, Any]:
     """
-    Busca preço/variação na CoinGecko a cada request (sem cache — intencional na H04).
+    Cache-aside (H06): HIT no Valkey; MISS busca CoinGecko, grava com CACHE_TTL_SECONDS.
     media_movel e volatilidade ficam null até as histórias de indicadores.
     """
     coin_id = DASHBOARD_COIN_ID
+    key = _cache_key(coin_id)
+
+    cached = cache_get(key)
+    if isinstance(cached, dict):
+        logger.info("cache HIT key=%s", key)
+        return cached
+
+    logger.info("cache MISS key=%s — consultando CoinGecko", key)
     try:
         market = get_market_data(coin_id)
     except CoinGeckoError as exc:
@@ -75,7 +91,7 @@ def get_dashboard() -> dict:
             ),
         ) from exc
 
-    return {
+    payload: dict[str, Any] = {
         "moeda": coin_id,
         "preco": market["preco"],
         "variacao_24h": market["variacao_24h"],
@@ -83,3 +99,5 @@ def get_dashboard() -> dict:
         "volatilidade": None,
         "atualizado_em": datetime.now(timezone.utc).isoformat(),
     }
+    cache_set(key, payload, ttl=CACHE_TTL_SECONDS)
+    return payload

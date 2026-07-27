@@ -18,3 +18,6 @@ DASHBOARD_COIN_ID: str = os.getenv("DASHBOARD_COIN_ID", "bitcoin")
 VALKEY_HOST: str = os.getenv("VALKEY_HOST", "localhost")
 VALKEY_PORT: int = int(os.getenv("VALKEY_PORT", "6379"))
 VALKEY_DB: int = int(os.getenv("VALKEY_DB", "0"))
+
+# Cache-aside (H06) — TTL do payload de indicadores em segundos.
+CACHE_TTL_SECONDS: int = int(os.getenv("CACHE_TTL_SECONDS", "60"))
