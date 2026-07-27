@@ -287,3 +287,11 @@ REGRAS DE INTERAÇÃO (AI-DLC)
 **Context**: Construction U1 H02 done
 
 ---
+
+## Construction H03 — Concluída
+**Timestamp**: 2026-07-27T02:00:30Z
+**User Input**: "prossiga com a proxima historia."
+**AI Response**: H03 implementada: services/coingecko.py get_market_data + config.py + httpx. Teste manual bitcoin OK (preco/variacao reais). Rota ainda mock (fora de escopo H03).
+**Context**: Construction U1 H03 done
+
+---
